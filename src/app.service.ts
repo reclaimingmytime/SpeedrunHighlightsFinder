@@ -27,22 +27,22 @@ const VOD_TIMESTAMP_PADDING = 10; // seconds
 export class AppService {
   async getVods(user?: string): Promise<DeathEvent[]> {
     const matchIds = await this.getMatchIDs(user);
-    const deathOrResets: DeathEvent[] = [];
+    const allVods: DeathEvent[] = [];
 
     for (const matchId of matchIds) {
       const match = await this.getMatch(matchId);
 
-      const deathOrResetTimelines = match.timelines.filter(
+      const deathTimelines = match.timelines.filter(
         (timeline) => timeline.type === 'projectelo.timeline.death',
       );
-      if (deathOrResetTimelines.length === 0) {
+      if (deathTimelines.length === 0) {
         continue;
       }
 
       const uuidToNickname = Object.fromEntries(
         match.players.map((player) => [player.uuid, player.nickname]),
       );
-      const playerEvents = deathOrResetTimelines.map((timeline) => ({
+      const playerEvents = deathTimelines.map((timeline) => ({
         time: timeline.time,
         uuid: timeline.uuid,
       }));
@@ -69,11 +69,11 @@ export class AppService {
         .filter((result): result is DeathEvent => result !== null);
 
       if (vods.length > 0) {
-        deathOrResets.push(...vods);
+        allVods.push(...vods);
       }
     }
 
-    return deathOrResets;
+    return allVods;
   }
 
   private async getMatchIDs(user?: string): Promise<number[]> {
