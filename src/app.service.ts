@@ -21,7 +21,7 @@ type ApiResponse = {
 };
 
 /* Constants */
-const RESULTS_COUNT = 100;
+const RESULTS_COUNT = 20;
 const VOD_TIMESTAMP_PADDING = 10; // seconds
 
 @Injectable()
