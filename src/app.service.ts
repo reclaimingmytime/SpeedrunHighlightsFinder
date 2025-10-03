@@ -5,13 +5,14 @@ type Timeline = { uuid: string; time: number; type: string };
 type Vod = { uuid: string; url: string; startsAt: number };
 type BasicMatchData = { id: number; vod: Vod | [] };
 type MatchData = {
+  id: number;
   date: number;
   timelines: Timeline[];
   vod: Vod[];
   players: { uuid: string; nickname: string }[];
   result: { time: number };
 };
-type DeathEvent = { vodInfo: string; vodLink: string };
+type DeathEvent = { matchId: number; vodInfo: string; vodLink: string };
 
 type ApiResponseData = BasicMatchData[] | MatchData | string;
 type ApiResponse = {
@@ -25,8 +26,8 @@ const VOD_TIMESTAMP_PADDING = 10; // seconds
 
 @Injectable()
 export class AppService {
-  async getVods(user?: string): Promise<DeathEvent[]> {
-    const matchIds = await this.getMatchIDs(user);
+  async getVods(user?: string, before?: number): Promise<DeathEvent[]> {
+    const matchIds = await this.getMatchIDs(user, before);
     const allVods: DeathEvent[] = [];
 
     for (const matchId of matchIds) {
@@ -59,6 +60,7 @@ export class AppService {
             );
 
             return {
+              matchId: match.id,
               vodInfo: uuidToNickname[event.uuid] + ' at ' + date,
               vodLink:
                 vod.url + '?t=' + (vodTimestamp - VOD_TIMESTAMP_PADDING) + 's',
@@ -76,9 +78,9 @@ export class AppService {
     return allVods;
   }
 
-  private async getMatchIDs(user?: string): Promise<number[]> {
+  private async getMatchIDs(user?: string, before?: number): Promise<number[]> {
     const response = await this.makeApiRequest(
-      `${user ? `users/${user}/matches` : 'matches'}?count=${RESULTS_COUNT}&excludeDecayed=true`,
+      `${user ? `users/${user}/matches` : 'matches'}?count=${RESULTS_COUNT}${before ? `&before=${before}` : ''}&excludeDecayed=true`,
     );
     this.validateMatchIdResponse(response);
 

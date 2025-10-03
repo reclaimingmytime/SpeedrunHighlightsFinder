@@ -7,9 +7,9 @@ export class AppController {
 
   @Get()
   @Render('index')
-  async root(@Query('user') user?: string) {
+  async root(@Query('user') user?: string, @Query('before') before?: number) {
     return {
-      vods: await this.appService.getVods(user),
+      vods: await this.appService.getVods(user, before),
       user: user || '',
     };
   }
