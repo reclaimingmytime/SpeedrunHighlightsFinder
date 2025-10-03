@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛏️</text></svg>">
+    <title>MCSR Ranked Highlights</title>
+</head>
+<body>
+    <h1>MCSR Ranked Highlights</h1>
+    <form>
+        <label for="user">User:</label>
+        <input type="text" id="user" name="user" value="{{user}}" autofocus />
+        <button type="submit">Submit</button>
+    </form>
+    {{#each vods}}
+      <p><a href="{{vodLink}}" target="_blank">{{vodInfo}}</a></p>
+    {{else}}
+        <p>No highlights found.</p>
+    {{/each}}
+
+</body>
+</html>
