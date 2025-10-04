@@ -8,8 +8,10 @@ export class AppController {
   @Get()
   @Render('index')
   async root(@Query('user') user?: string, @Query('before') before?: number) {
+    const response = await this.appService.getVods(user, before);
     return {
-      vods: await this.appService.getVods(user, before),
+      vods: response.allVods,
+      lastMatchId: response.lastMatchId,
       user: user || '',
     };
   }

@@ -9,18 +9,18 @@
     <h1>MCSR Ranked Highlights</h1>
     <form>
         <label for="user">User:</label>
-        <input type="text" id="user" name="user" value="{{user}}" autofocus />
+        <input type="text" id="user" name="user" value="{{user}}" />
         <button type="submit">Submit</button>
     </form>
     {{#each vods}}
         <p><a href="{{vodLink}}" target="_blank">{{vodInfo}}</a></p>
-        {{#if @last}}
-          <hr>
-          <p><a href="?user={{../user}}&amp;before={{matchId}}">Previous</a></p>
-        {{/if}}
     {{else}}
         <p>No highlights found.</p>
     {{/each}}
 
+    {{#if lastMatchId}}
+        <hr>
+        <p><a href="?user={{user}}&amp;before={{lastMatchId}}">Previous</a></p>
+    {{/if}}
 </body>
 </html>

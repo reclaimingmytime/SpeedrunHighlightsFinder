@@ -12,7 +12,7 @@ type MatchData = {
   players: { uuid: string; nickname: string }[];
   result: { time: number };
 };
-type DeathEvent = { matchId: number; vodInfo: string; vodLink: string };
+type DeathEvent = { vodInfo: string; vodLink: string };
 
 type ApiResponseData = BasicMatchData[] | MatchData | string;
 type ApiResponse = {
@@ -21,14 +21,15 @@ type ApiResponse = {
 };
 
 /* Constants */
-const RESULTS_COUNT = 20;
+const RESULTS_COUNT = 100;
 const VOD_TIMESTAMP_PADDING = 10; // seconds
 
 @Injectable()
 export class AppService {
-  async getVods(user?: string, before?: number): Promise<DeathEvent[]> {
+  async getVods(user?: string, before?: number) {
     const matchIds = await this.getMatchIDs(user, before);
     const allVods: DeathEvent[] = [];
+    const lastMatchId = matchIds[matchIds.length - 1];
 
     for (const matchId of matchIds) {
       const match = await this.getMatch(matchId);
@@ -60,7 +61,6 @@ export class AppService {
             );
 
             return {
-              matchId: match.id,
               vodInfo: uuidToNickname[event.uuid] + ' at ' + date,
               vodLink:
                 vod.url + '?t=' + (vodTimestamp - VOD_TIMESTAMP_PADDING) + 's',
@@ -75,7 +75,7 @@ export class AppService {
       }
     }
 
-    return allVods;
+    return { allVods, lastMatchId };
   }
 
   private async getMatchIDs(user?: string, before?: number): Promise<number[]> {
