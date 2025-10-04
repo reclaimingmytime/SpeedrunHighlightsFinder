@@ -21,7 +21,8 @@ type ApiResponse = {
 };
 
 /* Constants */
-const RESULTS_COUNT = 100;
+const API_MAX_RESULTS = 50; // setting a higher limit when querying all users. most players don't have a public vod
+const API_MAX_RESULTS_USER_PAGE = 20;
 const VOD_TIMESTAMP_PADDING = 10; // seconds
 
 @Injectable()
@@ -80,7 +81,7 @@ export class AppService {
 
   private async getMatchIDs(user?: string, before?: number): Promise<number[]> {
     const response = await this.makeApiRequest(
-      `${user ? `users/${user}/matches` : 'matches'}?count=${RESULTS_COUNT}${before ? `&before=${before}` : ''}&excludeDecayed=true`,
+      `${user ? `users/${user}/matches` : 'matches'}?count=${user ? API_MAX_RESULTS_USER_PAGE : API_MAX_RESULTS}${before ? `&before=${before}` : ''}&excludeDecayed=true`,
     );
     this.validateMatchIdResponse(response);
 
