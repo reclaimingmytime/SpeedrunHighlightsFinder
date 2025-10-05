@@ -21,7 +21,7 @@ type ApiResponse = {
 };
 
 /* Constants */
-const API_MAX_RESULTS = 50; // setting a higher limit when querying all users. most players don't have a public vod
+const API_MAX_RESULTS = 100; // setting a higher limit when querying all users. most players don't have a public vod
 const API_MAX_RESULTS_USER_PAGE = 20;
 const VOD_TIMESTAMP_PADDING = 10; // seconds
 
