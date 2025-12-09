@@ -19,9 +19,14 @@ type ApiResponse = {
   status: 'success' | 'error';
   data: ApiResponseData;
 };
+type ErrorPayload = {
+  error?: string;
+  query?: Record<string, string[]>;
+  params?: Record<string, string[]>;
+};
 
 /* Constants */
-const API_MAX_RESULTS = 1; // setting a higher limit when querying all users. most players don't have a public vod
+const API_MAX_RESULTS = 100; // setting a higher limit when querying all users. most players don't have a public vod
 const API_MAX_RESULTS_USER_PAGE = 20;
 const VOD_TIMESTAMP_PADDING = 10; // seconds
 
@@ -163,6 +168,12 @@ export class AppService {
 
   private async makeApiRequest(endpoint: string) {
     const response = await fetch('https://api.mcsrranked.com/' + endpoint);
+
+    if (!response.ok) {
+      throw new Error(
+        `Network response was not ok for endpoint ${endpoint}. Status: ${response.status} ${response.statusText}. Text: ${await response.text()}`,
+      );
+    }
     const responseJson = (await response.json()) as ApiResponse;
 
     this.handleResponseError(responseJson, endpoint);
@@ -170,15 +181,29 @@ export class AppService {
   }
 
   private handleResponseError(responseJson: ApiResponse, endpoint: string) {
-    if (responseJson.status !== 'success') {
-      let message = 'API request failed to endpoint ' + endpoint + '.';
-      if (typeof responseJson.data === 'string') {
-        if (responseJson.data === 'This player is not exist.') {
-          throw new NotFoundException('This player does not exist.');
+    if (responseJson.status === 'success') return;
+
+    let message = `API request failed to endpoint ${endpoint}.`;
+    const data = responseJson.data;
+
+    if (typeof data === 'object' && data !== null) {
+      const { error, query, params } = data as ErrorPayload;
+
+      if (error) {
+        if (error === 'This player is not exist.') {
+          throw new NotFoundException('This user does not exist.');
         }
-        message += ' ' + responseJson.data;
+        message += ` ${error}`;
       }
-      throw new Error(message);
+
+      if (query)
+        message += ` Query validation failed: ${JSON.stringify(query)}`;
+      if (params)
+        message += ` Parameter validation failed: ${JSON.stringify(params)}`;
+    } else if (typeof data === 'string') {
+      message += ` ${data}`;
     }
+
+    throw new Error(message);
   }
 }
