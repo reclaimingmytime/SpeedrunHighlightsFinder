@@ -3,18 +3,28 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛏️</text></svg>">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sakura.css@1.5.1/css/sakura.css" integrity="sha256-rFoyAIn+rtUKyWRsd6hDbzlnJmklIRroszMxG/mjxeY=" crossorigin="anonymous">
-    <style>a:visited{color: #982c61;}</style>
+    <link rel="icon"
+          href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛏️</text></svg>">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sakura.css@1.5.1/css/sakura.css"
+          integrity="sha256-rFoyAIn+rtUKyWRsd6hDbzlnJmklIRroszMxG/mjxeY=" crossorigin="anonymous">
+    <style>
+        a:visited {
+            color: #982c61;
+        }
+    </style>
     <title>MCSR Ranked Highlights</title>
 </head>
 <body>
     <h1>MCSR Ranked Highlights</h1>
     <form>
         <label for="user">Player:</label>
-        <input type="search" id="user" name="user" value="{{user}}" />
+        <input type="search" id="user" name="user" value="{{user}}"/>
         <button type="submit">Submit</button>
     </form>
+
+    {{#if error}}
+        <p style="color: red;">Error: {{error}}</p>
+    {{else}}
     {{#each vods}}
         <p><a href="{{vodLink}}" target="_blank">{{vodInfo}}</a></p>
     {{else}}
@@ -25,5 +35,6 @@
         <hr>
         <p><a href="?user={{user}}&amp;before={{lastMatchId}}">Previous</a></p>
     {{/if}}
+{{/if}}
 </body>
 </html>
