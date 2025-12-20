@@ -27,7 +27,7 @@ type ErrorPayload = {
 
 /* Constants */
 const API_MAX_RESULTS = 100; // setting a higher limit when querying all users. most players don't have a public vod
-const API_MAX_RESULTS_USER_PAGE = 20;
+const API_MAX_RESULTS_USER_PAGE = 60;
 const VOD_TIMESTAMP_PADDING = 10; // seconds
 
 @Injectable()
@@ -168,13 +168,14 @@ export class AppService {
 
   private async makeApiRequest(endpoint: string) {
     const response = await fetch('https://api.mcsrranked.com/' + endpoint);
+    const responseText = await response.text();
 
-    if (!response.ok) {
+    if (!response.ok && !responseText.startsWith('{')) {
       throw new Error(
-        `Network response was not ok for endpoint ${endpoint}. Status: ${response.status} ${response.statusText}. Text: ${await response.text()}`,
+        `Network response was not ok for endpoint ${endpoint}. Status: ${response.status} ${response.statusText}. Text: ${responseText}`,
       );
     }
-    const responseJson = (await response.json()) as ApiResponse;
+    const responseJson = JSON.parse(responseText) as ApiResponse;
 
     this.handleResponseError(responseJson, endpoint);
     return responseJson.data;
