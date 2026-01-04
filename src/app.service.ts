@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 /* Types */
 type Timeline = { uuid: string; time: number; type: string };
@@ -32,8 +36,10 @@ const VOD_TIMESTAMP_PADDING = 10; // seconds
 
 @Injectable()
 export class AppService {
-  async getVods(user?: string, before?: number) {
-    const matchIds = await this.getMatchIDs(user, before);
+  async getVods(user?: string, before?: number, season?: number) {
+    const parsedSeason = this.validateSeason(season);
+
+    const matchIds = await this.getMatchIDs(user, before, parsedSeason);
     const allVods: DeathEvent[] = [];
     const lastMatchId = matchIds[matchIds.length - 1];
 
@@ -81,12 +87,16 @@ export class AppService {
       }
     }
 
-    return { allVods, lastMatchId };
+    return { allVods, lastMatchId, parsedSeason };
   }
 
-  private async getMatchIDs(user?: string, before?: number): Promise<number[]> {
+  private async getMatchIDs(
+    user?: string,
+    before?: number,
+    season?: number,
+  ): Promise<number[]> {
     const response = await this.makeApiRequest(
-      `${user ? `users/${user}/matches` : 'matches'}?count=${user ? API_MAX_RESULTS_USER_PAGE : API_MAX_RESULTS}${before ? `&before=${before}` : ''}&excludeDecayed=true`,
+      `${user ? `users/${user}/matches` : 'matches'}?count=${user ? API_MAX_RESULTS_USER_PAGE : API_MAX_RESULTS}${before ? `&before=${before}` : ''}&excludeDecayed=true${season ? `&season=${season}` : ''}`,
     );
     this.validateMatchIdResponse(response);
 
@@ -132,6 +142,18 @@ export class AppService {
   ) {
     await fs.mkdir('./cache', { recursive: true });
     await fs.writeFile(path, JSON.stringify(response));
+  }
+
+  private validateSeason(season?: unknown): number | undefined {
+    if (season === undefined || season === '') return undefined;
+
+    const parsed = Number(season);
+    if (Number.isNaN(parsed) || parsed < 8) {
+      throw new BadRequestException(
+        'Season must be a number greater than or equal to 8.',
+      );
+    }
+    return parsed;
   }
 
   private validateMatchDataResponse(

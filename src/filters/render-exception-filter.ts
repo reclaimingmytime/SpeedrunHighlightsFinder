@@ -33,6 +33,10 @@ export class RenderExceptionFilter implements ExceptionFilter {
       return render(HttpStatus.NOT_FOUND, this.extractMessage(exception));
     }
 
+    if (status === 400) {
+      return render(HttpStatus.BAD_REQUEST, this.extractMessage(exception));
+    }
+
     this.log(exception);
     return render(HttpStatus.INTERNAL_SERVER_ERROR, 'Unexpected error');
   }

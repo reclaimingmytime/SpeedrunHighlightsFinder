@@ -7,11 +7,16 @@ export class AppController {
 
   @Get()
   @Render('index')
-  async root(@Query('user') user?: string, @Query('before') before?: number) {
-    const response = await this.appService.getVods(user, before);
+  async root(
+    @Query('user') user?: string,
+    @Query('before') before?: number,
+    @Query('season') season?: number,
+  ) {
+    const response = await this.appService.getVods(user, before, season);
     return {
       vods: response.allVods,
       lastMatchId: response.lastMatchId,
+      season: response.parsedSeason,
       user: user || '',
     };
   }
