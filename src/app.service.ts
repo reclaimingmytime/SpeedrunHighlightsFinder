@@ -150,7 +150,7 @@ export class AppService {
     const parsed = Number(season);
     if (Number.isNaN(parsed) || parsed < 8) {
       throw new BadRequestException(
-        'Season must be a number greater than or equal to 8.',
+        'Season must be a number greater than or equal to 8. The MCSR Ranked API does not show VODs for earlier seasons.',
       );
     }
     return parsed;
