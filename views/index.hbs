@@ -28,7 +28,10 @@
         <p style="color: red;">{{error}}</p>
     {{else}}
     {{#each vods}}
-        <p><a href="{{vodLink}}" target="_blank">{{vodInfo}}</a></p>
+        <p>
+            <img src="https://mineskin.eu/avatar/{{vodNickname}}/20.svg" style="height: 18px; display: inline; margin-bottom: 0;" alt="Player Avatar">
+            <a href="{{vodLink}}" target="_blank">{{vodNickname}} at {{vodTime}}</a>
+        </p>
     {{else}}
         <p>No highlights found.</p>
     {{/each}}

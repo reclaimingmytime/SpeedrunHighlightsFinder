@@ -16,7 +16,7 @@ type MatchData = {
   players: { uuid: string; nickname: string }[];
   result: { time: number };
 };
-type DeathEvent = { vodInfo: string; vodLink: string };
+type DeathEvent = { vodNickname: string; vodTime: string; vodLink: string };
 
 type ApiResponseData = BasicMatchData[] | MatchData | string;
 type ApiResponse = {
@@ -73,7 +73,8 @@ export class AppService {
             );
 
             return {
-              vodInfo: uuidToNickname[event.uuid] + ' at ' + date,
+              vodTime: date,
+              vodNickname: uuidToNickname[event.uuid],
               vodLink:
                 vod.url + '?t=' + (vodTimestamp - VOD_TIMESTAMP_PADDING) + 's',
             };
