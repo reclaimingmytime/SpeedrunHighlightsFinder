@@ -39,9 +39,12 @@ export class AppService {
   async getVods(user?: string, before?: number, season?: number) {
     const parsedSeason = this.validateSeason(season);
 
-    const matchIds = await this.getMatchIDs(user, before, parsedSeason);
+    const { lastMatchId, matchIds } = await this.getMatchIDs(
+      user,
+      before,
+      parsedSeason,
+    );
     const allVods: DeathEvent[] = [];
-    const lastMatchId = matchIds[matchIds.length - 1];
 
     for (const matchId of matchIds) {
       const match = await this.getMatch(matchId);
@@ -91,19 +94,18 @@ export class AppService {
     return { allVods, lastMatchId, parsedSeason };
   }
 
-  private async getMatchIDs(
-    user?: string,
-    before?: number,
-    season?: number,
-  ): Promise<number[]> {
-    const response = await this.makeApiRequest(
+  private async getMatchIDs(user?: string, before?: number, season?: number) {
+    const matchesResponse = await this.makeApiRequest(
       `${user ? `users/${user}/matches` : 'matches'}?count=${user ? API_MAX_RESULTS_USER_PAGE : API_MAX_RESULTS}${before ? `&before=${before}` : ''}&excludeDecayed=true${season ? `&season=${season}` : ''}`,
     );
-    this.validateMatchIdResponse(response);
+    this.validateMatchIdResponse(matchesResponse);
 
-    return response
+    const lastMatchId = matchesResponse[matchesResponse.length - 1]?.id;
+    const matchIds = matchesResponse
       .filter((item) => Array.isArray(item.vod) && item.vod.length !== 0)
       .map((item) => item.id);
+
+    return { lastMatchId, matchIds };
   }
 
   private async getMatch(id: number) {
