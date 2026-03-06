@@ -18,6 +18,7 @@ export class RenderExceptionFilter implements ExceptionFilter {
       res.status(status).render('index', {
         user: req.query?.user,
         vods: [],
+        season: req.query?.season,
         lastMatchId: undefined,
         error,
       });
