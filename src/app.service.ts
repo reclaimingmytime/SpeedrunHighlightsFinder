@@ -36,7 +36,13 @@ const VOD_TIMESTAMP_PADDING = 10; // seconds
 
 @Injectable()
 export class AppService {
-  async getVods(user?: string, before?: number, season?: number) {
+  async getVods(
+    user?: string,
+    before?: number,
+    season?: number,
+    includeOpponentClips?: boolean,
+  ) {
+    // includeOpponentClips: if true, include clips from the opponent as well (to be set via cookie in controller)
     const parsedSeason = this.validateSeason(season);
 
     const { lastMatchId, matchIds } = await this.getMatchIDs(
@@ -64,8 +70,14 @@ export class AppService {
         uuid: timeline.uuid,
       }));
 
+      // If includeOpponentClips is false and user is set, only include events for the user
+      const filteredEvents =
+        includeOpponentClips || !user
+          ? playerEvents
+          : playerEvents.filter((event) => uuidToNickname[event.uuid] === user);
+
       // For each event, check if there is a VOD for the player and compute the timestamp
-      const vods = playerEvents
+      const vods = filteredEvents
         .map((event) => {
           const vod = match.vod.find((v) => v.uuid === event.uuid);
           if (vod) {

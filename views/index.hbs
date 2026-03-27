@@ -40,8 +40,29 @@
 
     {{#if lastMatchId}}
         <hr>
-        <p><a href="?{{#if user}}user={{user}}&amp;{{/if}}before={{lastMatchId}}{{#if season}}&amp;season={{season}}{{/if}}">Previous</a></p>
+        <p>
+              <a href="?{{#if user}}user={{user}}&amp;{{/if}}before={{lastMatchId}}{{#if season}}&amp;season={{season}}{{/if}}">Previous</a>
+
+              {{#if user}}{{#unless error}}|
+              <a href="#" id="toggleOpponentClips" data-value="{{#if includeOpponentClips}}false{{else}}true{{/if}}">
+                {{#if includeOpponentClips}}Hide opponent clips{{else}}Include opponent clips{{/if}}
+              </a>
+              {{/unless}}{{/if}}
+            </p>
     {{/if}}
 {{/if}}
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const toggle = document.getElementById('toggleOpponentClips');
+        if (toggle) {
+          toggle.addEventListener('click', e => {
+            e.preventDefault();
+            const value = toggle.getAttribute('data-value');
+            document.cookie = `includeOpponentClips=${value}; path=/; max-age=31536000`;
+            window.location.reload();
+          });
+        }
+      });
+    </script>
 </body>
 </html>
