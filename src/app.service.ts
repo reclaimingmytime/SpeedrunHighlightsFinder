@@ -74,7 +74,10 @@ export class AppService {
       const filteredEvents =
         includeOpponentClips || !user
           ? playerEvents
-          : playerEvents.filter((event) => uuidToNickname[event.uuid] === user);
+          : playerEvents.filter(
+              (event) =>
+                uuidToNickname[event.uuid].toLowerCase() === user.toLowerCase(),
+            );
 
       // For each event, check if there is a VOD for the player and compute the timestamp
       const vods = filteredEvents
