@@ -14,19 +14,19 @@ export class AppController {
     @Query('season') season?: number,
     @Req() req?: Request,
   ) {
-    const includeOpponentClips = req?.cookies?.includeOpponentClips === 'true';
+    const includeOpponent = req?.cookies?.includeOpponent === 'true';
     const response = await this.appService.getVods(
       user,
       before,
       season,
-      includeOpponentClips,
+      includeOpponent,
     );
     return {
       vods: response.allVods,
       lastMatchId: response.lastMatchId,
       season: response.parsedSeason,
       user: user || '',
-      includeOpponentClips,
+      includeOpponent,
     };
   }
 }

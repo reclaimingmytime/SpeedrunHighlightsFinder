@@ -40,9 +40,8 @@ export class AppService {
     user?: string,
     before?: number,
     season?: number,
-    includeOpponentClips?: boolean,
+    includeOpponent?: boolean,
   ) {
-    // includeOpponentClips: if true, include clips from the opponent as well (to be set via cookie in controller)
     const parsedSeason = this.validateSeason(season);
 
     const { lastMatchId, matchIds } = await this.getMatchIDs(
@@ -70,9 +69,8 @@ export class AppService {
         uuid: timeline.uuid,
       }));
 
-      // If includeOpponentClips is false and user is set, only include events for the user
       const filteredEvents =
-        includeOpponentClips || !user
+        includeOpponent || !user
           ? playerEvents
           : playerEvents.filter(
               (event) =>

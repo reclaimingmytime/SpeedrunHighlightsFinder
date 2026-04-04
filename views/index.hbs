@@ -44,8 +44,8 @@
               <a href="?{{#if user}}user={{user}}&amp;{{/if}}before={{lastMatchId}}{{#if season}}&amp;season={{season}}{{/if}}">Previous</a>
 
               {{#if user}}{{#unless error}}|
-              <a href="#" id="toggleOpponentClips" data-value="{{#if includeOpponentClips}}false{{else}}true{{/if}}">
-                {{#if includeOpponentClips}}Hide opponent clips{{else}}Include opponent clips{{/if}}
+              <a href="#" id="toggleOpponentClips" data-value="{{#if includeOpponent}}false{{else}}true{{/if}}">
+                {{#if includeOpponent}}Hide opponent clips{{else}}Include opponent{{/if}}
               </a>
               {{/unless}}{{/if}}
             </p>
@@ -58,7 +58,7 @@
           toggle.addEventListener('click', e => {
             e.preventDefault();
             const value = toggle.getAttribute('data-value');
-            document.cookie = `includeOpponentClips=${value}; path=/; max-age=31536000`;
+            document.cookie = `includeOpponent=${value}; path=/; max-age=31536000`;
             window.location.reload();
           });
         }
