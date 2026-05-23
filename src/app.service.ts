@@ -177,8 +177,10 @@ export class AppService {
     if (before === undefined || before === '') return undefined;
 
     const parsed = Number(before);
-    if (Number.isNaN(parsed)) {
-      throw new BadRequestException('Query "before" must be a number.');
+    if (Number.isNaN(parsed) || parsed < 0 || parsed > 2147483647) {
+      throw new BadRequestException(
+        'Query "before" must be a number greater between 0 and 2147483647.',
+      );
     }
     return parsed;
   }
