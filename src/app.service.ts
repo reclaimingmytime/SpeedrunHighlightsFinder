@@ -32,7 +32,7 @@ type ErrorPayload = {
 /* Constants */
 const API_MAX_RESULTS = 100; // setting a higher limit when querying all users. most players don't have a public vod
 const API_MAX_RESULTS_USER_PAGE = 60;
-const VOD_TIMESTAMP_PADDING = 10; // seconds
+const VOD_TIMESTAMP_PADDING = 6; // seconds
 
 @Injectable()
 export class AppService {
@@ -43,10 +43,11 @@ export class AppService {
     includeOpponent?: boolean,
   ) {
     const parsedSeason = this.validateSeason(season);
+    const parsedBefore = this.validateBefore(before);
 
     const { lastMatchId, matchIds } = await this.getMatchIDs(
       user,
-      before,
+      parsedBefore,
       parsedSeason,
     );
     const allVods: DeathEvent[] = [];
@@ -166,8 +167,18 @@ export class AppService {
     const parsed = Number(season);
     if (Number.isNaN(parsed) || parsed < 8) {
       throw new BadRequestException(
-        'Season must be a number greater than or equal to 8. The MCSR Ranked API does not show VODs for earlier seasons.',
+        'Season must be a number greater than or equal to 8. The MCSR Ranked API does not include VODs for earlier seasons, and those VODs will have expired by now anyway.',
       );
+    }
+    return parsed;
+  }
+
+  private validateBefore(before?: unknown): number | undefined {
+    if (before === undefined || before === '') return undefined;
+
+    const parsed = Number(before);
+    if (Number.isNaN(parsed)) {
+      throw new BadRequestException('Query "before" must be a number.');
     }
     return parsed;
   }
