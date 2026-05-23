@@ -11,12 +11,29 @@
         a:visited {
             color: #982c61;
         }
+        /* nav link states */
+        a.nav-inactive {
+          color: #999;
+          pointer-events: none;
+          text-decoration: none;
+          cursor: default;
+        }
+        p {
+            margin-bottom: 16px;
+        }
     </style>
     <title>{{#if user}}{{user}} - {{/if}}MCSR Ranked Highlights</title>
 </head>
 <body>
     <h1>MCSR Ranked Highlights</h1>
-    <form>
+
+    <div style="margin-bottom: 0.75rem;">
+      <a href="#" id="viewLatestBtn">Matches</a>
+      |
+      <a href="#" id="viewHistoryBtn">History</a>
+    </div>
+
+    <form id="searchForm">
         <label for="user" style="display: inline">Player:</label>
         <input type="search" id="user" name="user" placeholder="All players" value="{{user}}">
         <label for="season" style="display: inline">Season:</label>
@@ -27,6 +44,7 @@
     {{#if error}}
         <p style="color: red;">{{error}}</p>
     {{else}}
+    <div id="latestMatchesContainer">
     {{#each vods}}
         <p>
             <a href="?user={{vodNickname}}" title="See all highlights by player">
@@ -50,19 +68,18 @@
               {{/unless}}{{/if}}
             </p>
     {{/if}}
+    </div>
+
+    <div id="searchHistoryPanel" style="display: none; margin-top: 1rem;">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <h2 style="margin-top:0">Search history</h2>
+        <button id="clearHistory" type="button">Clear history</button>
+      </div>
+      <p id="historyEmptyMessage" style="display:none;">No history yet.</p>
+      <ul id="historyList" style="list-style: none; padding-left: 0;"></ul>
+    </div>
+
 {{/if}}
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const toggle = document.getElementById('toggleOpponentClips');
-        if (toggle) {
-          toggle.addEventListener('click', e => {
-            e.preventDefault();
-            const value = toggle.getAttribute('data-value');
-            document.cookie = `includeOpponent=${value}; path=/; max-age=31536000`;
-            window.location.reload();
-          });
-        }
-      });
-    </script>
+<script src="/js/script.js"></script>
 </body>
 </html>
