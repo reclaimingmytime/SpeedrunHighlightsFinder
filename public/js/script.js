@@ -13,19 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const STORAGE_KEY = 'mcsr_search_history';
   const MAX_HISTORY = 100;
 
-  function safeLocalStorageAvailable() {
-    try {
-      const test = '__mcsr_test__';
-      localStorage.setItem(test, test);
-      localStorage.removeItem(test);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
   function loadHistory() {
-    if (!safeLocalStorageAvailable()) return {};
+    if (!localStorage) return;
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       return raw ? JSON.parse(raw) : {};
@@ -35,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function saveHistory(obj) {
-    if (!safeLocalStorageAvailable()) return;
+    if (!localStorage) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
     } catch {}
@@ -70,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function clearHistory() {
-    if (!safeLocalStorageAvailable()) return;
+    if (!localStorage) return;
     localStorage.removeItem(STORAGE_KEY);
     renderHistory();
   }
@@ -113,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const user = e.user || '(all)';
       const url = buildUrl(e.user);
 
-      // avatar (NOT clickable)
+      // avatar
       const img = document.createElement('img');
       img.src =
         'https://mineskin.eu/avatar/' + encodeURIComponent(user) + '/8.svg';
@@ -122,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
       img.style.display = 'inline';
       img.style.marginBottom = '0';
 
-      // text link (ONLY clickable part)
+      // text link
       const textA = document.createElement('a');
       textA.href = url;
       textA.textContent = `${user} — ${e.count} time${e.count === 1 ? '' : 's'} — last: ${new Date(e.last).toLocaleString()}`;
@@ -204,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
       switchView('history');
     });
 
-  // initial view logic (FIXED)
+  // initial view logic
   let initialMode;
 
   try {
