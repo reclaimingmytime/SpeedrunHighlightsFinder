@@ -11,75 +11,82 @@
         a:visited {
             color: #982c61;
         }
-        /* nav link states */
-        a.nav-inactive {
-          color: #999;
-          pointer-events: none;
-          text-decoration: none;
-          cursor: default;
-        }
+
         p {
             margin-bottom: 16px;
+        }
+
+        /* nav link states */
+        a.nav-inactive {
+            color: #999;
+            pointer-events: none;
+            text-decoration: none;
+            cursor: default;
         }
     </style>
     <title>{{#if user}}{{user}} - {{/if}}MCSR Ranked Highlights</title>
 </head>
 <body>
-    <h1>MCSR Ranked Highlights</h1>
+<h1>MCSR Ranked Highlights</h1>
 
-    <div style="margin-bottom: 0.75rem;">
-      <a href="#" id="viewLatestBtn">Matches</a>
-      |
-      <a href="#" id="viewHistoryBtn">History</a>
-    </div>
+<div style="margin-bottom: 0.75rem;">
+    <a href="#" id="viewLatestBtn">Matches</a>
+    |
+    <a href="#" id="viewHistoryBtn">History</a>
+</div>
 
-    <form id="searchForm">
-        <label for="user" style="display: inline">Player:</label>
-        <input type="search" id="user" name="user" placeholder="All players" value="{{user}}">
-        <label for="season" style="display: inline">Season:</label>
-        <input type="number" id="season" name="season" min="8" placeholder="current" value="{{season}}" style="display: inline-block; width: 79px">
-        <button type="submit">Submit</button>
-    </form>
+<form id="searchForm">
+    <label for="user" style="display: inline">Player:</label>
+    <input type="search" id="user" name="user" placeholder="All players" value="{{user}}">
+    <label for="season" style="display: inline">Season:</label>
+    <input type="number" id="season" name="season" min="8" placeholder="current" value="{{season}}"
+           style="display: inline-block; width: 79px">
+    <button type="submit">Submit</button>
+</form>
 
-    {{#if error}}
-        <p style="color: red;">{{error}}</p>
-    {{else}}
+{{#if error}}
     <div id="latestMatchesContainer">
-    {{#each vods}}
-        <p>
-            <a href="?user={{vodNickname}}" title="See all highlights by player">
-                <img src="https://mineskin.eu/avatar/{{vodNickname}}/8.svg" style="height: 18px; display: inline; margin-bottom: 0;" alt="Player Avatar">
-            </a>
-            <a href="{{vodLink}}" rel="noreferrer" target="_blank">{{vodNickname}} at {{vodTime}}</a>
-        </p>
-    {{else}}
-        <p>No highlights found.</p>
-    {{/each}}
-
-    {{#if lastMatchId}}
-        <hr>
-        <p>
-              <a href="?{{#if user}}user={{user}}&amp;{{/if}}before={{lastMatchId}}{{#if season}}&amp;season={{season}}{{/if}}">Previous</a>
-
-              {{#if user}}{{#unless error}}|
-              <a href="#" id="toggleOpponentClips" data-value="{{#if includeOpponent}}false{{else}}true{{/if}}">
-                {{#if includeOpponent}}Hide opponent clips{{else}}Include opponent{{/if}}
-              </a>
-              {{/unless}}{{/if}}
-            </p>
-    {{/if}}
+        <p style="color: red;">{{error}}</p>
     </div>
+{{else}}
+    <div id="latestMatchesContainer">
+        {{#each vods}}
+            <p>
+                <a href="?user={{vodNickname}}" title="See all highlights by player">
+                <img src="https://mineskin.eu/avatar/{{vodNickname}}/8.svg"
+                     style="height: 18px; display: inline; margin-bottom: 0;" alt="Player Avatar">
+                </a>
+                <a href="{{vodLink}}" rel="noreferrer" target="_blank">{{vodNickname}} at {{vodTime}}</a>
+            </p>
+        {{else}}
+            <p>No highlights found.</p>
+        {{/each}}
 
-    <div id="searchHistoryPanel" style="display: none; margin-top: 1rem;">
-      <div style="display:flex; gap:8px; align-items:center;">
+        {{#if lastMatchId}}
+            <hr>
+            <p>
+            <a href="?{{#if user}}user={{user}}&amp;{{/if}}before={{lastMatchId}}{{#if season}}
+                &amp;season={{season}}{{/if}}">Previous</a>
+
+                {{#if user}}{{#unless error}}|
+                    <a href="#" id="toggleOpponentClips" data-value="{{#if includeOpponent}}false{{else}}true{{/if}}">
+                        {{#if includeOpponent}}Hide opponent clips{{else}}Include opponent{{/if}}
+                    </a>
+                {{/unless}}{{/if}}
+            </p>
+        {{/if}}
+    </div>
+{{/if}}
+
+<div id="searchHistoryPanel" style="display: none; margin-top: 1rem;">
+    <div style="display:flex; gap:8px; align-items:center;">
         <h2 style="margin-top:0">Search history</h2>
         <button id="clearHistory" type="button">Clear history</button>
-      </div>
-      <p id="historyEmptyMessage" style="display:none;">No history yet.</p>
-      <ul id="historyList" style="list-style: none; padding-left: 0;"></ul>
     </div>
+    <p id="historyEmptyMessage" style="display:none;">No history yet.</p>
+    <ul id="historyList" style="list-style: none; padding-left: 0;"></ul>
+</div>
 
-{{/if}}
 <script src="/js/script.js"></script>
 </body>
 </html>
