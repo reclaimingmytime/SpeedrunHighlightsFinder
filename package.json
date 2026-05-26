@@ -20,9 +20,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@nestjs/common": "^11.1.23",
-    "@nestjs/core": "^11.1.23",
-    "@nestjs/platform-express": "^11.1.23",
+    "@nestjs/common": "^11.1.24",
+    "@nestjs/core": "^11.1.24",
+    "@nestjs/platform-express": "^11.1.24",
     "cookie-parser": "^1.4.7",
     "hbs": "^4.2.1",
     "reflect-metadata": "^0.2.2",
@@ -33,7 +33,7 @@
     "@eslint/js": "^10.0.1",
     "@nestjs/cli": "^11.0.21",
     "@nestjs/schematics": "^11.1.0",
-    "@nestjs/testing": "^11.1.23",
+    "@nestjs/testing": "^11.1.24",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
@@ -52,7 +52,7 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.59.4"
+    "typescript-eslint": "^8.60.0"
   },
   "jest": {
     "moduleFileExtensions": [
