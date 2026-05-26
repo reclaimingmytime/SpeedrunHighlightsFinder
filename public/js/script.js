@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // --- Toggle opponent clips ---
   const toggle = document.getElementById('toggleOpponentClips');
   if (toggle) {
     toggle.addEventListener('click', (e) => {
