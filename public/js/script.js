@@ -24,10 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function saveHistory(obj) {
-    if (!localStorage) return;
+  function saveHistory(history) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
     } catch {}
   }
 
@@ -35,27 +34,48 @@ document.addEventListener('DOMContentLoaded', () => {
     return (user || '').trim().toLowerCase();
   }
 
+  function hasErrorMessage() {
+    const latestContainer = document.getElementById('latestMatchesContainer');
+
+    if (!latestContainer) return false;
+
+    const text = latestContainer.textContent || '';
+
+    return (
+      text.toLowerCase().includes('does not exist') ||
+      text.toLowerCase().includes('not found') ||
+      text.toLowerCase().includes('error')
+    );
+  }
+
   function recordSearch(user) {
     if (!user || user.trim() === '') return;
 
     const key = normalizeKey(user);
-    const h = loadHistory();
+    const history = loadHistory();
     const now = new Date().toISOString();
 
-    if (!h[key]) {
-      h[key] = { count: 0, last: now, user: user || '' };
+    if (!history[key]) {
+      history[key] = {
+        count: 0,
+        last: now,
+        user,
+      };
     }
 
-    h[key].count = (h[key].count || 0) + 1;
-    h[key].last = now;
+    history[key].count += 1;
+    history[key].last = now;
 
-    const entries = Object.entries(h);
+    const entries = Object.entries(history);
+
     if (entries.length > MAX_HISTORY) {
       entries.sort((a, b) => new Date(a[1].last) - new Date(b[1].last));
-      const toKeep = entries.slice(entries.length - MAX_HISTORY);
-      saveHistory(Object.fromEntries(toKeep));
+
+      const trimmedEntries = entries.slice(entries.length - MAX_HISTORY);
+
+      saveHistory(Object.fromEntries(trimmedEntries));
     } else {
-      saveHistory(h);
+      saveHistory(history);
     }
   }
 
@@ -68,11 +88,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function buildUrl(user) {
     try {
       const params = new URLSearchParams();
-      if (user && user.trim() !== '') params.set('user', user);
-      return (
-        window.location.pathname +
-        (params.toString() ? '?' + params.toString() : '')
-      );
+
+      if (user && user.trim() !== '') {
+        params.set('user', user);
+      }
+
+      return window.location.pathname + (params.toString() ? '?' + params.toString() : '');
     } catch {
       return window.location.pathname;
     }
@@ -80,69 +101,97 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderHistory() {
     const list = document.getElementById('historyList');
-    const emptyMsg = document.getElementById('historyEmptyMessage');
 
-    if (!list || !emptyMsg) return;
+    const emptyMessage = document.getElementById('historyEmptyMessage');
 
-    const h = loadHistory();
-    const entries = Object.entries(h).map(([k, v]) => ({ key: k, ...v }));
+    if (!list || !emptyMessage) return;
+
+    const history = loadHistory();
+
+    const entries = Object.entries(history).map(([key, value]) => ({
+      key,
+      ...value,
+    }));
 
     if (entries.length === 0) {
       list.innerHTML = '';
-      emptyMsg.style.display = '';
+
+      emptyMessage.style.display = '';
+
       return;
     }
 
-    emptyMsg.style.display = 'none';
+    emptyMessage.style.display = 'none';
+
     entries.sort((a, b) => new Date(b.last) - new Date(a.last));
+
     list.innerHTML = '';
 
-    for (const e of entries) {
+    for (const entry of entries) {
       const p = document.createElement('p');
 
-      const user = e.user || '(all)';
-      const url = buildUrl(e.user);
+      const displayUser = entry.user || '(all)';
+      const url = buildUrl(entry.user);
 
-      // avatar
+      // player link
+      const playerLink = document.createElement('a');
+
+      playerLink.href = url;
+      playerLink.title = 'See all highlights by player';
+
+      // avatar image
       const img = document.createElement('img');
-      img.src =
-        'https://mineskin.eu/avatar/' + encodeURIComponent(user) + '/8.svg';
+
+      if (entry.user) {
+        img.src = 'https://mineskin.eu/avatar/' + encodeURIComponent(entry.user) + '/8.svg';
+      }
+
       img.alt = 'Player Avatar';
       img.style.height = '18px';
       img.style.display = 'inline';
       img.style.marginBottom = '0';
 
-      // text link
-      const textA = document.createElement('a');
-      textA.href = url;
-      textA.textContent = `${user} — ${e.count} time${e.count === 1 ? '' : 's'} — last: ${new Date(e.last).toLocaleString()}`;
+      // link text
+      const linkText = document.createTextNode(
+        ' ' +
+          `${displayUser} — ` +
+          `${entry.count} time${entry.count === 1 ? '' : 's'} ` +
+          `— last: ${new Date(entry.last).toLocaleString()}`,
+      );
+
+      playerLink.appendChild(img);
+      playerLink.appendChild(linkText);
 
       // delete button
-      const delBtn = document.createElement('button');
-      delBtn.type = 'button';
-      delBtn.textContent = 'Delete';
-      delBtn.style.marginLeft = '6px';
+      const deleteButton = document.createElement('button');
 
-      delBtn.addEventListener('click', () => {
-        const h2 = loadHistory();
-        delete h2[e.key];
-        saveHistory(h2);
+      deleteButton.type = 'button';
+      deleteButton.textContent = 'Delete';
+      deleteButton.style.marginLeft = '6px';
+
+      deleteButton.addEventListener('click', () => {
+        const updatedHistory = loadHistory();
+
+        delete updatedHistory[entry.key];
+
+        saveHistory(updatedHistory);
+
         renderHistory();
       });
 
       // assemble
-      p.appendChild(img);
-      p.appendChild(document.createTextNode(' '));
-      p.appendChild(textA);
-      p.appendChild(delBtn);
+      p.appendChild(playerLink);
+      p.appendChild(deleteButton);
 
       list.appendChild(p);
     }
   }
 
-  // view switching
-  const latestBtn = document.getElementById('viewLatestBtn');
-  const historyBtn = document.getElementById('viewHistoryBtn');
+  // --- View switching ---
+  const latestButton = document.getElementById('viewLatestBtn');
+
+  const historyButton = document.getElementById('viewHistoryBtn');
+
   const latestContainer = document.getElementById('latestMatchesContainer');
   const historyPanel = document.getElementById('searchHistoryPanel');
   const searchForm = document.getElementById('searchForm');
@@ -163,39 +212,69 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function switchView(mode) {
     if (mode === 'history') {
-      if (latestContainer) latestContainer.style.display = 'none';
-      if (historyPanel) historyPanel.style.display = '';
-      if (searchForm) searchForm.style.display = 'none';
+      if (latestContainer) {
+        latestContainer.style.display = 'none';
+      }
+
+      if (historyPanel) {
+        historyPanel.style.display = '';
+      }
+
+      if (searchForm) {
+        searchForm.style.display = 'none';
+      }
+
       renderHistory();
       updateUrlViewParam('history');
 
-      if (historyBtn) historyBtn.classList.add('nav-inactive');
-      if (latestBtn) latestBtn.classList.remove('nav-inactive');
+      if (historyButton) {
+        historyButton.classList.add('nav-inactive');
+      }
+
+      if (latestButton) {
+        latestButton.classList.remove('nav-inactive');
+      }
     } else {
-      if (latestContainer) latestContainer.style.display = '';
-      if (historyPanel) historyPanel.style.display = 'none';
-      if (searchForm) searchForm.style.display = '';
+      if (latestContainer) {
+        latestContainer.style.display = '';
+      }
+
+      if (historyPanel) {
+        historyPanel.style.display = 'none';
+      }
+
+      if (searchForm) {
+        searchForm.style.display = '';
+      }
+
       updateUrlViewParam('latest');
 
-      if (latestBtn) latestBtn.classList.add('nav-inactive');
-      if (historyBtn) historyBtn.classList.remove('nav-inactive');
+      if (latestButton) {
+        latestButton.classList.add('nav-inactive');
+      }
+
+      if (historyButton) {
+        historyButton.classList.remove('nav-inactive');
+      }
     }
   }
 
-  if (latestBtn)
-    latestBtn.addEventListener('click', (e) => {
+  if (latestButton) {
+    latestButton.addEventListener('click', (e) => {
       e.preventDefault();
       switchView('latest');
     });
+  }
 
-  if (historyBtn)
-    historyBtn.addEventListener('click', (e) => {
+  if (historyButton) {
+    historyButton.addEventListener('click', (e) => {
       e.preventDefault();
       switchView('history');
     });
+  }
 
-  // initial view logic
-  let initialMode;
+  // --- Initial view logic ---
+  let initialMode = 'latest';
 
   try {
     const params = new URLSearchParams(window.location.search);
@@ -207,19 +286,22 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       initialMode = 'latest';
 
-      if (userParam && userParam.trim() !== '') {
+      if (userParam && userParam.trim() !== '' && !hasErrorMessage()) {
         recordSearch(userParam);
       }
     }
-  } catch {
-    initialMode = 'latest';
-  }
+  } catch {}
 
   switchView(initialMode);
 
-  const clearBtn = document.getElementById('clearHistory');
-  if (clearBtn)
-    clearBtn.addEventListener('click', () => {
-      if (confirm('Clear all search history?')) clearHistory();
+  // --- Clear history button ---
+  const clearButton = document.getElementById('clearHistory');
+
+  if (clearButton) {
+    clearButton.addEventListener('click', () => {
+      if (confirm('Clear all search history?')) {
+        clearHistory();
+      }
     });
+  }
 });
