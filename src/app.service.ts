@@ -16,7 +16,7 @@ type MatchData = {
   players: { uuid: string; nickname: string }[];
   result: { time: number };
 };
-type DeathEvent = { vodNickname: string; vodTime: string; vodLink: string };
+type DeathEvent = { vodNickname: string; vodTime: string; vodLink: string; eventUnix: number };
 
 type ApiResponseData = BasicMatchData[] | MatchData | string;
 type ApiResponse = {
@@ -83,7 +83,7 @@ export class AppService {
         .map((event) => {
           const vod = match.vod.find((v) => v.uuid === event.uuid);
           if (vod) {
-            const { vodTimestamp, date } = this.getTime(
+            const { vodTimestamp, date, eventUnix } = this.getTime(
               match,
               event.time,
               vod.startsAt,
@@ -94,6 +94,7 @@ export class AppService {
               vodNickname: uuidToNickname[event.uuid],
               vodLink:
                 vod.url + '?t=' + (vodTimestamp - VOD_TIMESTAMP_PADDING) + 's',
+              eventUnix,
             };
           }
           return null;
@@ -143,13 +144,13 @@ export class AppService {
 
   private getTime(match: MatchData, eventTime: number, vodStart: number) {
     const gameStartUnix = match.date - match.result.time / 1000;
-    const eventAbsoluteUnix = gameStartUnix + eventTime / 1000;
+    const eventAbsoluteUnix = gameStartUnix + eventTime / 1000; // seconds
     const vodTimestamp = Math.floor(eventAbsoluteUnix - vodStart);
 
     const date = new Date(eventAbsoluteUnix * 1000).toLocaleString('de-DE', {
       timeZone: 'Europe/Berlin',
     });
-    return { vodTimestamp, date };
+    return { vodTimestamp, date, eventUnix: eventAbsoluteUnix };
   }
 
   private async writeToCache(

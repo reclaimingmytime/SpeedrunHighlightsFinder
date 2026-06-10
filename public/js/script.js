@@ -1,3 +1,8 @@
+//todo future features for "latest from history" view:
+// - make view similar to highlights view (space between player head and name)
+// - pagination and limit (do not fetch more players after limit is reached, show "load more" button, and then dont fetch the ones you already fetched but dont display them either)
+// - also add "include opponent" to "latest from history" (with similar border).
+
 document.addEventListener('DOMContentLoaded', () => {
   // --- Toggle opponent clips ---
   const toggle = document.getElementById('toggleOpponentClips');
@@ -8,6 +13,131 @@ document.addEventListener('DOMContentLoaded', () => {
       document.cookie = `includeOpponent=${value}; path=/; max-age=31536000`;
       window.location.reload();
     });
+  }
+
+  // --- Helpers for fetching latest matches from search history ---
+  function getIncludeOpponentFromCookie() {
+    try {
+      return document.cookie
+        .split(';')
+        .map((c) => c.trim())
+        .includes('includeOpponent=true');
+    } catch {
+      return false;
+    }
+  }
+
+  function renderLatestMatches(vods) {
+    const container = document.getElementById('latestMatchesContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (!vods || vods.length === 0) {
+      const p = document.createElement('p');
+      p.textContent = 'No highlights found.';
+      container.appendChild(p);
+      return;
+    }
+
+    for (const vod of vods) {
+      const p = document.createElement('p');
+      const avatarAnchor = document.createElement('a');
+      avatarAnchor.href = buildUrl(vod.vodNickname);
+      avatarAnchor.title = 'See all highlights by player';
+
+      const img = document.createElement('img');
+      img.src = 'https://mineskin.eu/avatar/' + encodeURIComponent(vod.vodNickname) + '/8.svg';
+      img.alt = 'Player Avatar';
+      img.style.height = '18px';
+      img.style.display = 'inline';
+      img.style.marginBottom = '0';
+
+      avatarAnchor.appendChild(img);
+
+      const link = document.createElement('a');
+      link.href = vod.vodLink;
+      link.rel = 'noreferrer';
+      link.target = '_blank';
+      link.textContent = `${vod.vodNickname} at ${vod.vodTime}`;
+
+      p.appendChild(avatarAnchor);
+      p.appendChild(link);
+
+      container.appendChild(p);
+    }
+  }
+
+  async function fetchlatestFromHistory() {
+    const container = document.getElementById('latestMatchesContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+    const loading = document.createElement('p');
+    loading.textContent = 'Loading latest matches from history...';
+    container.appendChild(loading);
+
+    const history = loadHistory();
+    const entries = Object.entries(history).map(([key, value]) => ({ key, ...value }));
+
+    if (entries.length === 0) {
+      renderLatestMatches([]);
+      return;
+    }
+
+    // season from input if present
+    let season;
+    try {
+      const seasonInput = document.getElementById('season');
+      if (seasonInput && seasonInput.value && seasonInput.value.trim() !== '') {
+        season = Number(seasonInput.value);
+      }
+    } catch {}
+
+    const includeOpponent = getIncludeOpponentFromCookie();
+
+    const allVods = [];
+    const seenLinks = new Set();
+
+    // Fetch each user's latest vods sequentially to avoid hammering the API
+    for (const entry of entries) {
+      if (!entry.user) continue;
+      try {
+        const params = new URLSearchParams();
+        params.set('user', entry.user);
+        if (season !== undefined) params.set('season', String(season));
+        if (includeOpponent) params.set('includeOpponent', 'true');
+
+        const res = await fetch('/api/latest?' + params.toString());
+        if (!res.ok) continue;
+        const json = await res.json();
+        const vods = json.vods || [];
+
+        for (const vod of vods) {
+          if (!seenLinks.has(vod.vodLink)) {
+            seenLinks.add(vod.vodLink);
+            allVods.push(vod);
+          }
+        }
+      } catch (err) {
+        // ignore individual user errors and continue
+      }
+    }
+
+    // Show results
+    if (allVods.length === 0) {
+      renderLatestMatches([]);
+      return;
+    }
+
+    // Sort by event time (newest first) — server provides `eventUnix` (seconds since epoch)
+    allVods.sort((a, b) => {
+      const ta = typeof a.eventUnix === 'number' ? a.eventUnix : 0;
+      const tb = typeof b.eventUnix === 'number' ? b.eventUnix : 0;
+      return tb - ta;
+    });
+
+    renderLatestMatches(allVods);
   }
 
   // --- Search history (client-side using localStorage) ---
@@ -189,6 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- View switching ---
   const latestButton = document.getElementById('viewLatestBtn');
+  const latestFromHistoryButton = document.getElementById('viewlatestFromHistoryBtn');
 
   const historyButton = document.getElementById('viewHistoryBtn');
 
@@ -200,10 +331,14 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const url = new URL(window.location.href);
 
+      // support custom view modes. 'latest' means no view param, 'history' is explicit,
+      // other modes will be stored in the 'view' query param (e.g. 'latestFromHistory')
       if (mode === 'history') {
         url.searchParams.set('view', 'history');
-      } else {
+      } else if (mode === 'latest') {
         url.searchParams.delete('view');
+      } else {
+        url.searchParams.set('view', mode);
       }
 
       window.history.replaceState({}, '', url.toString());
@@ -234,6 +369,40 @@ document.addEventListener('DOMContentLoaded', () => {
       if (latestButton) {
         latestButton.classList.remove('nav-inactive');
       }
+
+      if (latestFromHistoryButton) {
+        latestFromHistoryButton.classList.remove('nav-inactive');
+      }
+    } else if (mode === 'latestFromHistory') {
+      // show latest container but load aggregated results from local history
+      if (latestContainer) {
+        latestContainer.style.display = '';
+      }
+
+      if (historyPanel) {
+        historyPanel.style.display = 'none';
+      }
+
+      if (searchForm) {
+        searchForm.style.display = '';
+      }
+
+      updateUrlViewParam(mode);
+
+      if (latestFromHistoryButton) {
+        latestFromHistoryButton.classList.add('nav-inactive');
+      }
+
+      if (latestButton) {
+        latestButton.classList.remove('nav-inactive');
+      }
+
+      if (historyButton) {
+        historyButton.classList.remove('nav-inactive');
+      }
+
+      // trigger the fetch for aggregated results
+      fetchlatestFromHistory();
     } else {
       if (latestContainer) {
         latestContainer.style.display = '';
@@ -247,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
         searchForm.style.display = '';
       }
 
-      updateUrlViewParam('latest');
+      updateUrlViewParam(mode);
 
       if (latestButton) {
         latestButton.classList.add('nav-inactive');
@@ -256,13 +425,19 @@ document.addEventListener('DOMContentLoaded', () => {
       if (historyButton) {
         historyButton.classList.remove('nav-inactive');
       }
+
+      if (latestFromHistoryButton) {
+        latestFromHistoryButton.classList.remove('nav-inactive');
+      }
     }
   }
 
   if (latestButton) {
+    // clicking Matches should redirect to the canonical latest matches page (reload)
     latestButton.addEventListener('click', (e) => {
       e.preventDefault();
-      switchView('latest');
+      // navigate to the current pathname (clears any view query param)
+      window.location.href = window.location.pathname;
     });
   }
 
@@ -270,6 +445,13 @@ document.addEventListener('DOMContentLoaded', () => {
     historyButton.addEventListener('click', (e) => {
       e.preventDefault();
       switchView('history');
+    });
+  }
+
+  if (latestFromHistoryButton) {
+    latestFromHistoryButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      switchView('latestFromHistory');
     });
   }
 
@@ -283,6 +465,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (viewParam === 'history') {
       initialMode = 'history';
+    } else if (viewParam) {
+      // preserve custom latest view modes (e.g. latestFromHistory)
+      initialMode = viewParam;
     } else {
       initialMode = 'latest';
 
@@ -302,6 +487,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (confirm('Clear all search history?')) {
         clearHistory();
       }
+    });
+  }
+
+  // Fetch latest from history button
+  const fetchHistoryBtn = document.getElementById('fetchHistoryLatest');
+  if (fetchHistoryBtn) {
+    fetchHistoryBtn.addEventListener('click', () => {
+      fetchlatestFromHistory();
+      // switch to a dedicated latest-from-history view so the URL reflects the action
+      switchView('latestFromHistory');
     });
   }
 });

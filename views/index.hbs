@@ -30,7 +30,9 @@
 <h1>MCSR Ranked Highlights</h1>
 
 <div style="margin-bottom: 0.75rem;">
-    <a href="#" id="viewLatestBtn">Matches</a>
+    <a href="/" id="viewLatestBtn">Highlights</a>
+    |
+    <a href="?view=latestFromHistory" id="viewlatestFromHistoryBtn">Latest from History</a>
     |
     <a href="#" id="viewHistoryBtn">History</a>
 </div>
@@ -80,6 +82,7 @@
     <div style="display:flex; gap:8px; align-items:center;">
         <h2 style="margin-top:0">Search history</h2>
         <button id="clearHistory" type="button">Clear history</button>
+        <button id="fetchHistoryLatest" type="button">Fetch latest from history</button>
     </div>
     <p id="historyEmptyMessage" style="display:none;">No history yet.</p>
     <ul id="historyList" style="list-style: none; padding-left: 0;"></ul>
