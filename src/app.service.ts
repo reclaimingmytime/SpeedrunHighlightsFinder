@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
 /* Types */
 type Timeline = { uuid: string; time: number; type: string };
@@ -36,35 +32,22 @@ const VOD_TIMESTAMP_PADDING = 6; // seconds
 
 @Injectable()
 export class AppService {
-  async getVods(
-    user?: string,
-    before?: number,
-    season?: number,
-    includeOpponent?: boolean,
-  ) {
+  async getVods(user?: string, before?: number, season?: number, includeOpponent?: boolean) {
     const parsedSeason = this.validateSeason(season);
     const parsedBefore = this.validateBefore(before);
 
-    const { lastMatchId, matchIds } = await this.getMatchIDs(
-      user,
-      parsedBefore,
-      parsedSeason,
-    );
+    const { lastMatchId, matchIds } = await this.getMatchIDs(user, parsedBefore, parsedSeason);
     const allVods: DeathEvent[] = [];
 
     for (const matchId of matchIds) {
       const match = await this.getMatch(matchId);
 
-      const deathTimelines = match.timelines.filter(
-        (timeline) => timeline.type === 'projectelo.timeline.death',
-      );
+      const deathTimelines = match.timelines.filter((timeline) => timeline.type === 'projectelo.timeline.death');
       if (deathTimelines.length === 0) {
         continue;
       }
 
-      const uuidToNickname = Object.fromEntries(
-        match.players.map((player) => [player.uuid, player.nickname]),
-      );
+      const uuidToNickname = Object.fromEntries(match.players.map((player) => [player.uuid, player.nickname]));
       const playerEvents = deathTimelines.map((timeline) => ({
         time: timeline.time,
         uuid: timeline.uuid,
@@ -73,27 +56,19 @@ export class AppService {
       const filteredEvents =
         includeOpponent || !user
           ? playerEvents
-          : playerEvents.filter(
-              (event) =>
-                uuidToNickname[event.uuid].toLowerCase() === user.toLowerCase(),
-            );
+          : playerEvents.filter((event) => uuidToNickname[event.uuid].toLowerCase() === user.toLowerCase());
 
       // For each event, check if there is a VOD for the player and compute the timestamp
       const vods = filteredEvents
         .map((event) => {
           const vod = match.vod.find((v) => v.uuid === event.uuid);
           if (vod) {
-            const { vodTimestamp, date, eventUnix } = this.getTime(
-              match,
-              event.time,
-              vod.startsAt,
-            );
+            const { vodTimestamp, date, eventUnix } = this.getTime(match, event.time, vod.startsAt);
 
             return {
               vodTime: date,
               vodNickname: uuidToNickname[event.uuid],
-              vodLink:
-                vod.url + '?t=' + (vodTimestamp - VOD_TIMESTAMP_PADDING) + 's',
+              vodLink: vod.url + '?t=' + (vodTimestamp - VOD_TIMESTAMP_PADDING) + 's',
               eventUnix,
             };
           }
@@ -107,6 +82,31 @@ export class AppService {
     }
 
     return { allVods, lastMatchId, parsedSeason };
+  }
+
+  // Aggregate latest vods for multiple players. This reduces client-side requests by performing
+  // the per-player fetches server-side and returning a single, deduplicated, sorted list.
+  async getVodsForPlayers(players: string[], season?: number, includeOpponent?: boolean) {
+    const parsedSeason = this.validateSeason(season);
+
+    const seen = new Set<string>();
+    const allVods: DeathEvent[] = [];
+
+    for (const player of players) {
+      if (!player) continue;
+      const resp = await this.getVods(player, undefined, season, includeOpponent);
+      for (const vod of resp.allVods) {
+        if (!seen.has(vod.vodLink)) {
+          seen.add(vod.vodLink);
+          allVods.push(vod);
+        }
+      }
+    }
+
+    // Sort by event time (newest first)
+    allVods.sort((a, b) => (b.eventUnix || 0) - (a.eventUnix || 0));
+
+    return { allVods, parsedSeason };
   }
 
   private async getMatchIDs(user?: string, before?: number, season?: number) {
@@ -153,11 +153,7 @@ export class AppService {
     return { vodTimestamp, date, eventUnix: eventAbsoluteUnix };
   }
 
-  private async writeToCache(
-    fs: typeof import('fs/promises'),
-    path: string,
-    response: MatchData,
-  ) {
+  private async writeToCache(fs: typeof import('fs/promises'), path: string, response: MatchData) {
     await fs.mkdir('./cache', { recursive: true });
     await fs.writeFile(path, JSON.stringify(response));
   }
@@ -179,16 +175,12 @@ export class AppService {
 
     const parsed = Number(before);
     if (Number.isNaN(parsed) || parsed < 0 || parsed > 2147483647) {
-      throw new BadRequestException(
-        'Query "before" must be a number greater between 0 and 2147483647.',
-      );
+      throw new BadRequestException('Query "before" must be a number greater between 0 and 2147483647.');
     }
     return parsed;
   }
 
-  private validateMatchDataResponse(
-    response: any,
-  ): asserts response is MatchData {
+  private validateMatchDataResponse(response: any): asserts response is MatchData {
     if (
       typeof response !== 'object' ||
       response === null ||
@@ -196,25 +188,16 @@ export class AppService {
       !Array.isArray((response as MatchData).timelines) ||
       !Array.isArray((response as MatchData).vod)
     ) {
-      throw new Error(
-        'Expected a MatchData object but got: ' + JSON.stringify(response),
-      );
+      throw new Error('Expected a MatchData object but got: ' + JSON.stringify(response));
     }
   }
 
-  private validateMatchIdResponse(
-    response: ApiResponseData,
-  ): asserts response is BasicMatchData[] {
+  private validateMatchIdResponse(response: ApiResponseData): asserts response is BasicMatchData[] {
     if (
       !Array.isArray(response) ||
-      !response.every(
-        (item) => typeof item.id === 'number' && typeof item.vod === 'object',
-      ) // "redundant" in types, but ensures runtime type safety
+      !response.every((item) => typeof item.id === 'number' && typeof item.vod === 'object') // "redundant" in types, but ensures runtime type safety
     ) {
-      throw new Error(
-        'Expected an array of basic match data but got: ' +
-          JSON.stringify(response),
-      );
+      throw new Error('Expected an array of basic match data but got: ' + JSON.stringify(response));
     }
   }
 
@@ -249,10 +232,8 @@ export class AppService {
         message += ` ${error}`;
       }
 
-      if (query)
-        message += ` Query validation failed: ${JSON.stringify(query)}`;
-      if (params)
-        message += ` Parameter validation failed: ${JSON.stringify(params)}`;
+      if (query) message += ` Query validation failed: ${JSON.stringify(query)}`;
+      if (params) message += ` Parameter validation failed: ${JSON.stringify(params)}`;
     } else if (typeof data === 'string') {
       message += ` ${data}`;
     }

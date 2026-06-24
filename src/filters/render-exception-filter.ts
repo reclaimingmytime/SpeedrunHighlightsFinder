@@ -1,10 +1,4 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
 @Catch()
@@ -47,9 +41,7 @@ export class RenderExceptionFilter implements ExceptionFilter {
 
     if (typeof response === 'string') return response;
     if (typeof response === 'object' && response !== null) {
-      return (
-        (response as { message?: string }).message ?? JSON.stringify(response)
-      );
+      return (response as { message?: string }).message ?? JSON.stringify(response);
     }
 
     return 'Unexpected error';

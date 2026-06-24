@@ -64,19 +64,21 @@
             <p>No highlights found.</p>
         {{/each}}
 
-        {{#if lastMatchId}}
-            <hr>
-            <p>
-            <a href="?{{#if user}}user={{user}}&amp;{{/if}}before={{lastMatchId}}{{#if season}}&amp;season={{season}}{{/if}}">Previous</a>
-                {{#if user}}{{#unless error}}|
-                    <a href="#" id="toggleOpponentClips" data-value="{{#if includeOpponent}}false{{else}}true{{/if}}">
-                        {{#if includeOpponent}}Hide opponent clips{{else}}Include opponent{{/if}}
-                    </a>
-                {{/unless}}{{/if}}
-            </p>
-        {{/if}}
-    </div>
+         {{#if lastMatchId}}
+             <hr>
+             <p>
+             <a href="?{{#if user}}user={{user}}&amp;{{/if}}before={{lastMatchId}}{{#if season}}&amp;season={{season}}{{/if}}">Previous</a>
+                 {{#if user}}{{#unless error}}|
+                     <a href="#" id="toggleOpponentClips" data-value="{{#if includeOpponent}}false{{else}}true{{/if}}">
+                         {{#if includeOpponent}}Hide opponent clips{{else}}Include opponent{{/if}}
+                     </a>
+                 {{/unless}}{{/if}}
+             </p>
+         {{/if}}
+     </div>
 {{/if}}
+
+<div id="latestFromHistoryControls" style="display: none; margin-top: 1rem;"></div>
 
 <div id="searchHistoryPanel" style="display: none; margin-top: 1rem;">
     <div style="display:flex; gap:8px; align-items:center;">
