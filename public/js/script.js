@@ -1,8 +1,3 @@
-//todo future features for "latest from history" view:
-// - make view similar to highlights view (space between player head and name)
-// - pagination and limit (do not fetch more players after limit is reached, show "load more" button, and then dont fetch the ones you already fetched but dont display them either)
-// - also add "include opponent" to "latest from history" (with similar border).
-
 document.addEventListener('DOMContentLoaded', () => {
   // --- Toggle opponent clips ---
   const toggle = document.getElementById('toggleOpponentClips');
@@ -15,20 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- Helpers for fetching latest matches from search history ---
-  function getIncludeOpponentFromCookie() {
-    try {
-      return document.cookie
-        .split(';')
-        .map((c) => c.trim())
-        .includes('includeOpponent=true');
-    } catch {
-      return false;
-    }
-  }
+   // --- Helpers for fetching latest matches from search history ---
+
+  // Store state for pagination in latestFromHistory view
+  let latestFromHistoryState = null;
 
   function renderLatestMatches(vods) {
     const container = document.getElementById('latestMatchesContainer');
+    const controlsDiv = document.getElementById('latestFromHistoryControls');
     if (!container) return;
 
     container.innerHTML = '';
@@ -37,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const p = document.createElement('p');
       p.textContent = 'No highlights found.';
       container.appendChild(p);
+      if (controlsDiv) controlsDiv.innerHTML = '';
       return;
     }
 
@@ -52,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
       img.style.height = '18px';
       img.style.display = 'inline';
       img.style.marginBottom = '0';
+      img.style.marginRight = '8px';
 
       avatarAnchor.appendChild(img);
 
@@ -66,79 +57,121 @@ document.addEventListener('DOMContentLoaded', () => {
 
       container.appendChild(p);
     }
+
+    // Add controls (HR and opponent toggle) to match regular highlights page styling
+    if (controlsDiv) {
+      controlsDiv.innerHTML = '';
+
+      const hr = document.createElement('hr');
+      controlsDiv.appendChild(hr);
+
+      const p = document.createElement('p');
+
+      const toggleBtn = document.createElement('a');
+      toggleBtn.href = '#';
+      toggleBtn.textContent = 'Include opponent';
+      toggleBtn.setAttribute('data-value', 'true');
+
+      const includeOpponent = getIncludeOpponentHistoryFromCookie();
+      if (includeOpponent) {
+        toggleBtn.textContent = 'Hide opponent clips';
+        toggleBtn.setAttribute('data-value', 'false');
+      }
+
+      toggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const value = toggleBtn.getAttribute('data-value');
+        document.cookie = `includeOpponentHistory=${value}; path=/; max-age=31536000`;
+        latestFromHistoryState = null;
+        fetchlatestFromHistory();
+      });
+
+      p.appendChild(toggleBtn);
+      controlsDiv.appendChild(p);
+    }
   }
 
-  async function fetchlatestFromHistory() {
-    const container = document.getElementById('latestMatchesContainer');
-    if (!container) return;
+    async function fetchlatestFromHistory(loadMore = false) {
+      const container = document.getElementById('latestMatchesContainer');
+      if (!container) return;
 
-    container.innerHTML = '';
-    const loading = document.createElement('p');
-    loading.textContent = 'Loading latest matches from history...';
-    container.appendChild(loading);
+      // Initialize state on first call
+      if (!loadMore || !latestFromHistoryState) {
+        const history = loadHistory();
+        const entries = Object.entries(history).map(([key, value]) => ({ key, ...value }));
 
-    const history = loadHistory();
-    const entries = Object.entries(history).map(([key, value]) => ({ key, ...value }));
-
-    if (entries.length === 0) {
-      renderLatestMatches([]);
-      return;
-    }
-
-    // season from input if present
-    let season;
-    try {
-      const seasonInput = document.getElementById('season');
-      if (seasonInput && seasonInput.value && seasonInput.value.trim() !== '') {
-        season = Number(seasonInput.value);
-      }
-    } catch {}
-
-    const includeOpponent = getIncludeOpponentFromCookie();
-
-    const allVods = [];
-    const seenLinks = new Set();
-
-    // Fetch each user's latest vods sequentially to avoid hammering the API
-    for (const entry of entries) {
-      if (!entry.user) continue;
-      try {
-        const params = new URLSearchParams();
-        params.set('user', entry.user);
-        if (season !== undefined) params.set('season', String(season));
-        if (includeOpponent) params.set('includeOpponent', 'true');
-
-        const res = await fetch('/api/latest?' + params.toString());
-        if (!res.ok) continue;
-        const json = await res.json();
-        const vods = json.vods || [];
-
-        for (const vod of vods) {
-          if (!seenLinks.has(vod.vodLink)) {
-            seenLinks.add(vod.vodLink);
-            allVods.push(vod);
-          }
+        if (entries.length === 0) {
+          renderLatestMatches([]);
+          return;
         }
-      } catch (err) {
-        // ignore individual user errors and continue
+
+        // season from input if present
+        let season;
+        try {
+          const seasonInput = document.getElementById('season');
+          if (seasonInput && seasonInput.value && seasonInput.value.trim() !== '') {
+            season = Number(seasonInput.value);
+          }
+        } catch {}
+
+        latestFromHistoryState = {
+          allVods: [],
+          season: season,
+          includeOpponent: getIncludeOpponentHistoryFromCookie(),
+          history: entries,
+          seenLinks: new Set(),
+        };
+
+        container.innerHTML = '';
+        const loading = document.createElement('p');
+        loading.textContent = 'Loading latest matches from history...';
+        container.appendChild(loading);
       }
+
+      const state = latestFromHistoryState;
+
+      // Fetch all users to get all their latest vods
+      for (let i = 0; i < state.history.length; i++) {
+        const entry = state.history[i];
+
+        if (!entry.user) continue;
+        try {
+          const params = new URLSearchParams();
+          params.set('user', entry.user);
+          if (state.season !== undefined) params.set('season', String(state.season));
+          if (state.includeOpponent) params.set('includeOpponent', 'true');
+
+          const res = await fetch('/api/latest?' + params.toString());
+          if (!res.ok) continue;
+          const json = await res.json();
+          const vods = json.vods || [];
+
+          for (const vod of vods) {
+            if (!state.seenLinks.has(vod.vodLink)) {
+              state.seenLinks.add(vod.vodLink);
+              state.allVods.push(vod);
+            }
+          }
+        } catch (err) {
+          // ignore individual user errors and continue
+        }
+      }
+
+      // Show results
+      if (state.allVods.length === 0) {
+        renderLatestMatches([]);
+        return;
+      }
+
+      // Sort by event time (newest first) — server provides `eventUnix` (seconds since epoch)
+      state.allVods.sort((a, b) => {
+        const ta = typeof a.eventUnix === 'number' ? a.eventUnix : 0;
+        const tb = typeof b.eventUnix === 'number' ? b.eventUnix : 0;
+        return tb - ta;
+      });
+
+      renderLatestMatches(state.allVods);
     }
-
-    // Show results
-    if (allVods.length === 0) {
-      renderLatestMatches([]);
-      return;
-    }
-
-    // Sort by event time (newest first) — server provides `eventUnix` (seconds since epoch)
-    allVods.sort((a, b) => {
-      const ta = typeof a.eventUnix === 'number' ? a.eventUnix : 0;
-      const tb = typeof b.eventUnix === 'number' ? b.eventUnix : 0;
-      return tb - ta;
-    });
-
-    renderLatestMatches(allVods);
-  }
 
   // --- Search history (client-side using localStorage) ---
   const STORAGE_KEY = 'mcsr_search_history';
@@ -317,15 +350,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- View switching ---
-  const latestButton = document.getElementById('viewLatestBtn');
-  const latestFromHistoryButton = document.getElementById('viewlatestFromHistoryBtn');
+   // --- View switching ---
+   const latestButton = document.getElementById('viewLatestBtn');
+   const latestFromHistoryButton = document.getElementById('viewlatestFromHistoryBtn');
 
-  const historyButton = document.getElementById('viewHistoryBtn');
+   const historyButton = document.getElementById('viewHistoryBtn');
 
-  const latestContainer = document.getElementById('latestMatchesContainer');
-  const historyPanel = document.getElementById('searchHistoryPanel');
-  const searchForm = document.getElementById('searchForm');
+    const latestContainer = document.getElementById('latestMatchesContainer');
+    const historyPanel = document.getElementById('searchHistoryPanel');
+    const searchForm = document.getElementById('searchForm');
+
+   function getIncludeOpponentHistoryFromCookie() {
+     try {
+       return document.cookie
+         .split(';')
+         .map((c) => c.trim())
+         .includes('includeOpponentHistory=true');
+     } catch {
+       return false;
+     }
+   }
 
   function updateUrlViewParam(mode) {
     try {
@@ -345,92 +389,107 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch {}
   }
 
-  function switchView(mode) {
-    if (mode === 'history') {
-      if (latestContainer) {
-        latestContainer.style.display = 'none';
-      }
+   function switchView(mode) {
+     if (mode === 'history') {
+       if (latestContainer) {
+         latestContainer.style.display = 'none';
+       }
 
-      if (historyPanel) {
-        historyPanel.style.display = '';
-      }
+       if (historyPanel) {
+         historyPanel.style.display = '';
+       }
 
-      if (searchForm) {
-        searchForm.style.display = 'none';
-      }
+       if (searchForm) {
+         searchForm.style.display = 'none';
+       }
 
-      renderHistory();
-      updateUrlViewParam('history');
+       const controlsDiv = document.getElementById('latestFromHistoryControls');
+       if (controlsDiv) {
+         controlsDiv.style.display = 'none';
+       }
 
-      if (historyButton) {
-        historyButton.classList.add('nav-inactive');
-      }
+       renderHistory();
+       updateUrlViewParam('history');
 
-      if (latestButton) {
-        latestButton.classList.remove('nav-inactive');
-      }
+       if (historyButton) {
+         historyButton.classList.add('nav-inactive');
+       }
 
-      if (latestFromHistoryButton) {
-        latestFromHistoryButton.classList.remove('nav-inactive');
-      }
-    } else if (mode === 'latestFromHistory') {
-      // show latest container but load aggregated results from local history
-      if (latestContainer) {
-        latestContainer.style.display = '';
-      }
+       if (latestButton) {
+         latestButton.classList.remove('nav-inactive');
+       }
 
-      if (historyPanel) {
-        historyPanel.style.display = 'none';
-      }
+       if (latestFromHistoryButton) {
+         latestFromHistoryButton.classList.remove('nav-inactive');
+       }
+     } else if (mode === 'latestFromHistory') {
+       // show latest container but load aggregated results from local history
+       if (latestContainer) {
+         latestContainer.style.display = '';
+       }
 
-      if (searchForm) {
-        searchForm.style.display = '';
-      }
+       if (historyPanel) {
+         historyPanel.style.display = 'none';
+       }
 
-      updateUrlViewParam(mode);
+       if (searchForm) {
+         searchForm.style.display = '';
+       }
 
-      if (latestFromHistoryButton) {
-        latestFromHistoryButton.classList.add('nav-inactive');
-      }
+       const controlsDiv = document.getElementById('latestFromHistoryControls');
+       if (controlsDiv) {
+         controlsDiv.style.display = '';
+       }
 
-      if (latestButton) {
-        latestButton.classList.remove('nav-inactive');
-      }
+       updateUrlViewParam(mode);
 
-      if (historyButton) {
-        historyButton.classList.remove('nav-inactive');
-      }
+       if (latestFromHistoryButton) {
+         latestFromHistoryButton.classList.add('nav-inactive');
+       }
 
-      // trigger the fetch for aggregated results
-      fetchlatestFromHistory();
-    } else {
-      if (latestContainer) {
-        latestContainer.style.display = '';
-      }
+       if (latestButton) {
+         latestButton.classList.remove('nav-inactive');
+       }
 
-      if (historyPanel) {
-        historyPanel.style.display = 'none';
-      }
+       if (historyButton) {
+         historyButton.classList.remove('nav-inactive');
+       }
 
-      if (searchForm) {
-        searchForm.style.display = '';
-      }
+       // trigger the fetch for aggregated results
+       fetchlatestFromHistory();
+     } else {
+       if (latestContainer) {
+         latestContainer.style.display = '';
+       }
 
-      updateUrlViewParam(mode);
+       if (historyPanel) {
+         historyPanel.style.display = 'none';
+       }
 
-      if (latestButton) {
-        latestButton.classList.add('nav-inactive');
-      }
+       if (searchForm) {
+         searchForm.style.display = '';
+       }
 
-      if (historyButton) {
-        historyButton.classList.remove('nav-inactive');
-      }
+       const controlsDiv = document.getElementById('latestFromHistoryControls');
+       if (controlsDiv) {
+         controlsDiv.style.display = 'none';
+       }
 
-      if (latestFromHistoryButton) {
-        latestFromHistoryButton.classList.remove('nav-inactive');
-      }
-    }
-  }
+       updateUrlViewParam(mode);
+
+       if (latestButton) {
+         latestButton.classList.add('nav-inactive');
+       }
+
+       if (historyButton) {
+         historyButton.classList.remove('nav-inactive');
+       }
+
+       if (latestFromHistoryButton) {
+         latestFromHistoryButton.classList.remove('nav-inactive');
+       }
+     }
+   }
 
   if (latestButton) {
     // clicking Matches should redirect to the canonical latest matches page (reload)
