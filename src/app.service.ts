@@ -91,14 +91,24 @@ export class AppService {
 
     const seen = new Set<string>();
     const allVods: DeathEvent[] = [];
+    const notFound: string[] = [];
 
     for (const player of players) {
       if (!player) continue;
-      const resp = await this.getVods(player, undefined, season, includeOpponent);
-      for (const vod of resp.allVods) {
-        if (!seen.has(vod.vodLink)) {
-          seen.add(vod.vodLink);
-          allVods.push(vod);
+      try {
+        const resp = await this.getVods(player, undefined, season, includeOpponent);
+        for (const vod of resp.allVods) {
+          if (!seen.has(vod.vodLink)) {
+            seen.add(vod.vodLink);
+            allVods.push(vod);
+          }
+        }
+      } catch (err) {
+        // If a user is not found, record it but continue fetching for other users
+        if (err instanceof NotFoundException) {
+          notFound.push(player);
+        } else {
+          throw err;
         }
       }
     }
@@ -106,7 +116,7 @@ export class AppService {
     // Sort by event time (newest first)
     allVods.sort((a, b) => (b.eventUnix || 0) - (a.eventUnix || 0));
 
-    return { allVods, parsedSeason };
+    return { allVods, parsedSeason, notFound };
   }
 
   private async getMatchIDs(user?: string, before?: number, season?: number) {

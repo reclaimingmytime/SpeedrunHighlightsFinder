@@ -15,12 +15,21 @@ document.addEventListener('DOMContentLoaded', () => {
   // Store state for pagination in latestFromHistory view
   let latestFromHistoryState = null;
 
-  function renderLatestMatches(vods) {
+  function renderLatestMatches(vods, notFound = []) {
     const container = document.getElementById('latestMatchesContainer');
     const controlsDiv = document.getElementById('latestFromHistoryControls');
     if (!container) return;
 
     container.innerHTML = '';
+
+    // Display info about users not found
+    if (notFound.length > 0) {
+      const infoP = document.createElement('p');
+      infoP.style.color = '#666';
+      infoP.style.fontStyle = 'italic';
+      infoP.textContent = `Note: ${notFound.length} user${notFound.length === 1 ? '' : 's'} not found: ${notFound.join(', ')}`;
+      container.appendChild(infoP);
+    }
 
     if (!vods || vods.length === 0) {
       const p = document.createElement('p');
@@ -77,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const entries = Object.entries(history).map(([key, value]) => ({ key, ...value }));
 
       if (entries.length === 0) {
-        renderLatestMatches([]);
+        renderLatestMatches([], []);
         return;
       }
 
@@ -96,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         includeOpponent: false,
         history: entries,
         seenLinks: new Set(),
+        notFound: [],
       };
 
       container.innerHTML = '';
@@ -109,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Batch-fetch latest vods for all players server-side to reduce client load
     const players = state.history.map((e) => e.user).filter(Boolean);
     if (players.length === 0) {
-      renderLatestMatches([]);
+      renderLatestMatches([], []);
       return;
     }
 
@@ -122,22 +132,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const res = await fetch('/api/latest?' + params.toString());
       if (!res.ok) {
-        renderLatestMatches([]);
+        renderLatestMatches([], []);
         return;
       }
       const json = await res.json();
       state.allVods = json.vods || [];
+      state.notFound = json.notFound || [];
     } catch (err) {
-      renderLatestMatches([]);
+      renderLatestMatches([], []);
       return;
     }
 
     if (state.allVods.length === 0) {
-      renderLatestMatches([]);
+      renderLatestMatches([], state.notFound);
       return;
     }
 
-    renderLatestMatches(state.allVods);
+    renderLatestMatches(state.allVods, state.notFound);
   }
 
   // --- Search history (client-side using localStorage) ---

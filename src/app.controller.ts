@@ -46,6 +46,7 @@ export class AppController {
         vods: response.allVods,
         players: playersArray,
         season: response.parsedSeason,
+        notFound: response.notFound,
       };
     }
 
