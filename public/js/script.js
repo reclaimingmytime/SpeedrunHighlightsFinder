@@ -101,7 +101,6 @@ document.addEventListener('DOMContentLoaded', () => {
       state = {
         allVods: [],
         season: season,
-        includeOpponent: false,
         history: entries,
         notFound: [],
       };
@@ -124,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
       // Send players as a single comma-separated string
       params.set('players', players.join(','));
       if (state.season !== undefined) params.set('season', String(state.season));
-      if (state.includeOpponent) params.set('includeOpponent', 'true');
 
       const res = await fetch('/api/latest?' + params.toString());
       if (!res.ok) {
