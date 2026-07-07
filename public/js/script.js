@@ -12,8 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Helpers for fetching latest matches from search history ---
 
-  // Store state for pagination in latestFromHistory view
-  let latestFromHistoryState = null;
+  let state = null;
 
   function renderLatestMatches(vods, notFound = []) {
     const container = document.getElementById('latestMatchesContainer');
@@ -76,12 +75,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  async function fetchlatestFromHistory(loadMore = false) {
+  async function fetchLatestFromHistory(loadMore = false) {
     const container = document.getElementById('latestMatchesContainer');
     if (!container) return;
 
     // Initialize state on first call
-    if (!loadMore || !latestFromHistoryState) {
+    if (!loadMore || !state) {
       const history = loadHistory();
       const entries = Object.entries(history).map(([key, value]) => ({ key, ...value }));
 
@@ -99,12 +98,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } catch {}
 
-      latestFromHistoryState = {
+      state = {
         allVods: [],
         season: season,
         includeOpponent: false,
         history: entries,
-        seenLinks: new Set(),
         notFound: [],
       };
 
@@ -113,8 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
       loading.textContent = 'Loading latest matches from history...';
       container.appendChild(loading);
     }
-
-    const state = latestFromHistoryState;
 
     // Batch-fetch latest vods for all players server-side to reduce client load
     const players = state.history.map((e) => e.user).filter(Boolean);
@@ -269,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
     list.innerHTML = '';
 
     for (const entry of entries) {
-      const p = document.createElement('p');
+      const li = document.createElement('li');
 
       const displayUser = entry.user || '(all)';
       const url = buildUrl(entry.user);
@@ -321,33 +317,22 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // assemble
-      p.appendChild(playerLink);
-      p.appendChild(deleteButton);
+      li.appendChild(playerLink);
+      li.appendChild(deleteButton);
 
-      list.appendChild(p);
+      list.appendChild(li);
     }
   }
 
   // --- View switching ---
   const latestButton = document.getElementById('viewLatestBtn');
-  const latestFromHistoryButton = document.getElementById('viewlatestFromHistoryBtn');
+  const latestFromHistoryButton = document.getElementById('viewLatestFromHistoryBtn');
 
   const historyButton = document.getElementById('viewHistoryBtn');
 
   const latestContainer = document.getElementById('latestMatchesContainer');
   const historyPanel = document.getElementById('searchHistoryPanel');
   const searchForm = document.getElementById('searchForm');
-
-  function getIncludeOpponentHistoryFromCookie() {
-    try {
-      return document.cookie
-        .split(';')
-        .map((c) => c.trim())
-        .includes('includeOpponentHistory=true');
-    } catch {
-      return false;
-    }
-  }
 
   function updateUrlViewParam(mode) {
     try {
@@ -434,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // trigger the fetch for aggregated results
-      fetchlatestFromHistory();
+      fetchLatestFromHistory();
     } else {
       if (latestContainer) {
         latestContainer.style.display = '';
@@ -524,16 +509,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (confirm('Clear all search history?')) {
         clearHistory();
       }
-    });
-  }
-
-  // Fetch latest from history button
-  const fetchHistoryBtn = document.getElementById('fetchHistoryLatest');
-  if (fetchHistoryBtn) {
-    fetchHistoryBtn.addEventListener('click', () => {
-      fetchlatestFromHistory();
-      // switch to a dedicated latest-from-history view so the URL reflects the action
-      switchView('latestFromHistory');
     });
   }
 });
