@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const clearButton = document.getElementById('clearHistory');
+
   // --- Toggle opponent clips ---
   const toggle = document.getElementById('toggleOpponentClips');
   if (toggle) {
@@ -229,13 +231,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderHistory() {
-    const list = document.getElementById('historyList');
+    const historyContainer = document.getElementById('historyContainer');
 
     const emptyMessage = document.getElementById('historyEmptyMessage');
 
-    if (!list || !emptyMessage) return;
+    if (!historyContainer || !emptyMessage) return;
 
     const history = loadHistory();
+
+    if (clearButton) {
+      clearButton.style.display = Object.keys(history).length > 0 ? '' : 'none';
+    }
 
     const entries = Object.entries(history).map(([key, value]) => ({
       key,
@@ -243,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
 
     if (entries.length === 0) {
-      list.innerHTML = '';
+      historyContainer.innerHTML = '';
 
       emptyMessage.style.display = '';
 
@@ -254,10 +260,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     entries.sort((a, b) => new Date(b.last) - new Date(a.last));
 
-    list.innerHTML = '';
+    historyContainer.innerHTML = '';
 
     for (const entry of entries) {
-      const li = document.createElement('li');
+      const p = document.createElement('p');
 
       const displayUser = entry.user || '(all)';
       const url = buildUrl(entry.user);
@@ -296,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       deleteButton.type = 'button';
       deleteButton.textContent = 'Delete';
-      deleteButton.style.marginLeft = '6px';
+      deleteButton.style.marginLeft = '10px';
 
       deleteButton.addEventListener('click', () => {
         const updatedHistory = loadHistory();
@@ -309,36 +315,39 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // assemble
-      li.appendChild(playerLink);
-      li.appendChild(deleteButton);
+      p.appendChild(playerLink);
+      p.appendChild(deleteButton);
 
-      list.appendChild(li);
+      historyContainer.appendChild(p);
     }
   }
 
-  // --- Initialize pages ---
-  if (document.getElementById('historyList')) {
-    renderHistory();
+  function initializeView() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const viewParam = params.get('view');
+
+      if (viewParam === 'history') {
+        renderHistory();
+        return;
+      }
+
+      if (viewParam === 'latestFromHistory') {
+        fetchLatestFromHistory();
+        return;
+      }
+
+      const userParam = params.get('user');
+
+      if (userParam && userParam.trim() !== '' && !hasErrorMessage()) {
+        recordSearch(userParam);
+      }
+    } catch {}
   }
 
-  if (document.getElementById('latestFromHistoryStatus')) {
-    fetchLatestFromHistory();
-  }
-
-  // --- Record search to display number of searches in history ---
-  const userInput = document.getElementById('user');
-
-  const form = document.getElementById('searchForm');
-
-  if (form && userInput) {
-    form.addEventListener('submit', () => {
-      recordSearch(userInput.value);
-    });
-  }
+  initializeView();
 
   // --- Clear history button ---
-  const clearButton = document.getElementById('clearHistory');
-
   if (clearButton) {
     clearButton.addEventListener('click', () => {
       if (confirm('Clear all search history?')) {

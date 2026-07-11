@@ -95,18 +95,14 @@
 
 
 {{#if isHistory}}
-
     <div id="searchHistoryPanel" style="margin-top: 1rem;">
-        <div style="display:flex; gap:8px; align-items:center;">
-            <h2 style="margin-top:0">Search history</h2>
-            <button id="clearHistory" type="button">Clear history</button>
-        </div>
-
         <p id="historyEmptyMessage" style="display:none;">
             No history yet.
         </p>
 
-        <ul id="historyList" style="list-style: none; padding-left: 0;"></ul>
+        <div id="historyContainer"></div>
+
+        <button id="clearHistory" type="button" style="display: none;">Clear history</button>
     </div>
 
 {{/if}}
