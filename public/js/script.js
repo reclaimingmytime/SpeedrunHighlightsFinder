@@ -394,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (searchForm) {
-        searchForm.style.display = '';
+        searchForm.style.display = 'none';
       }
 
       const controlsDiv = document.getElementById('latestFromHistoryControls');
