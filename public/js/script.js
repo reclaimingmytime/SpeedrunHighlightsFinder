@@ -16,19 +16,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let state = null;
 
-  function renderLatestMatches(vods, notFound = [], error) {
+  function renderLatestMatches(vods, notFound = [], notStreamed = [], error) {
     const container = document.getElementById('latestMatchesContainer');
     const statusDiv = document.getElementById('latestFromHistoryStatus');
     if (!container) return;
 
     container.innerHTML = '';
 
-    // Display info about users not found
+    // Display users that do not exist
     if (notFound.length > 0) {
       const infoP = document.createElement('p');
       infoP.style.color = '#666';
       infoP.style.fontStyle = 'italic';
       infoP.textContent = `Note: ${notFound.length} user${notFound.length === 1 ? '' : 's'} not found: ${notFound.join(', ')}`;
+      container.appendChild(infoP);
+    }
+
+    // Display users that exist but have no streams this season
+    if (notStreamed.length > 0) {
+      const infoP = document.createElement('p');
+      infoP.style.color = '#666';
+      infoP.style.fontStyle = 'italic';
+      infoP.textContent = `No matches found this season (including private matches) for: ${notStreamed.join(', ')}`;
       container.appendChild(infoP);
     }
 
@@ -129,24 +138,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const res = await fetch('/api/latest?' + params.toString());
       if (!res.ok) {
-        renderLatestMatches([], [], 'Could not fetch latest matches. An unexpected error occurred.');
+        renderLatestMatches([], [], [], 'Could not fetch latest matches. An unexpected error occurred.');
         return;
       }
       const json = await res.json();
       state.allVods = json.vods || [];
       state.notFound = json.notFound || [];
+      state.notStreamed = json.notStreamed || [];
     } catch (err) {
-      renderLatestMatches([], [], 'An internal error occurred. Check the browser console for more info.');
+      renderLatestMatches([], [], [], 'An internal error occurred. Check the browser console for more info.');
       console.error(err);
       return;
     }
 
     if (state.allVods.length === 0) {
-      renderLatestMatches([], state.notFound);
+      renderLatestMatches([], state.notFound, state.notStreamed);
       return;
     }
 
-    renderLatestMatches(state.allVods, state.notFound);
+    renderLatestMatches(state.allVods, state.notFound, state.notStreamed);
   }
 
   // --- Search history (client-side using localStorage) ---

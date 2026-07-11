@@ -69,7 +69,6 @@ export class AppService {
               return nickname?.toLowerCase() === user.toLowerCase();
             });
 
-      // For each event, check if there is a VOD for the player and compute the timestamp
       const vods = filteredEvents
         .map((event) => {
           const vod = vodMap.get(event.uuid);
@@ -95,32 +94,40 @@ export class AppService {
     return { allVods, lastMatchId, parsedSeason };
   }
 
-  // Aggregate latest vods for multiple players. This reduces client-side requests by performing
-  // the per-player fetches server-side and returning a single, deduplicated, sorted list.
   async getVodsForPlayers(players: string[], season?: number, includeOpponent?: boolean) {
     const parsedSeason = this.validateSeason(season);
 
     const seen = new Set<string>();
     const allVods: DeathEvent[] = [];
     const notFound: string[] = [];
+    const notPlayed: string[] = [];
 
-    // Use concurrency limiter to avoid overwhelming the API
     const limit = pLimit(10);
 
+    const validPlayers = players.filter((p) => !!p);
+
     const results = await Promise.allSettled(
-      players
-        .filter((p) => !!p)
-        .map((player) =>
-          limit(() => this.getVods(player, undefined, season, includeOpponent).then((resp) => ({ player, resp }))),
+      validPlayers.map((player) =>
+        limit(() =>
+          this.getVods(player, undefined, season, includeOpponent).then((resp) => ({
+            player,
+            resp,
+          })),
         ),
+      ),
     );
 
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
-      const player = players.filter((p) => !!p)[i];
+      const player = validPlayers[i];
 
       if (result.status === 'fulfilled') {
         const { resp } = result.value;
+
+        if (!resp.lastMatchId) {
+          notPlayed.push(player);
+        }
+
         for (const vod of resp.allVods) {
           if (!seen.has(vod.vodLink)) {
             seen.add(vod.vodLink);
@@ -137,7 +144,12 @@ export class AppService {
     // Sort by event time (newest first)
     allVods.sort((a, b) => (b.eventUnix || 0) - (a.eventUnix || 0));
 
-    return { allVods, parsedSeason, notFound };
+    return {
+      allVods,
+      parsedSeason,
+      notFound,
+      notPlayed,
+    };
   }
 
   private async getMatchIDs(user?: string, before?: number, season?: number) {

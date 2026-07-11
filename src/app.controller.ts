@@ -63,6 +63,7 @@ export class AppController {
         players: playersArray,
         season: response.parsedSeason,
         notFound: response.notFound,
+        notPlayed: response.notPlayed,
       };
     }
 
