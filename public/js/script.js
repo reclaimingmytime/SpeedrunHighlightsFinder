@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let state = null;
 
-  function renderLatestMatches(vods, notFound = []) {
+  function renderLatestMatches(vods, notFound = [], error) {
     const container = document.getElementById('latestMatchesContainer');
     const statusDiv = document.getElementById('latestFromHistoryStatus');
     if (!container) return;
@@ -30,6 +30,15 @@ document.addEventListener('DOMContentLoaded', () => {
       infoP.style.fontStyle = 'italic';
       infoP.textContent = `Note: ${notFound.length} user${notFound.length === 1 ? '' : 's'} not found: ${notFound.join(', ')}`;
       container.appendChild(infoP);
+    }
+
+    if (error) {
+      const errorP = document.createElement('p');
+      errorP.style.color = 'red';
+      errorP.textContent = error;
+      container.appendChild(errorP);
+      if (statusDiv) statusDiv.innerHTML = '';
+      return;
     }
 
     if (!vods || vods.length === 0) {
@@ -90,12 +99,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // season from input if present
       let season;
-      try {
-        const seasonInput = document.getElementById('season');
-        if (seasonInput && seasonInput.value && seasonInput.value.trim() !== '') {
-          season = Number(seasonInput.value);
-        }
-      } catch {}
+      const seasonInput = document.getElementById('season');
+      if (seasonInput && seasonInput.value && seasonInput.value.trim() !== '') {
+        season = Number(seasonInput.value);
+      }
 
       state = {
         allVods: [],
@@ -122,14 +129,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const res = await fetch('/api/latest?' + params.toString());
       if (!res.ok) {
-        renderLatestMatches([], []);
+        renderLatestMatches([], [], 'Could not fetch latest matches. An unexpected error occurred.');
         return;
       }
       const json = await res.json();
       state.allVods = json.vods || [];
       state.notFound = json.notFound || [];
     } catch (err) {
-      renderLatestMatches([], []);
+      renderLatestMatches([], [], 'An internal error occurred. Check the browser console for more info.');
+      console.error(err);
       return;
     }
 
@@ -146,11 +154,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const MAX_HISTORY = 100;
 
   function loadHistory() {
-    if (!localStorage) return;
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       return raw ? JSON.parse(raw) : {};
-    } catch {
+    } catch (err) {
+      console.error('Error loading search history from localStorage:', err);
       return {};
     }
   }
@@ -158,7 +166,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function saveHistory(history) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-    } catch {}
+    } catch (err) {
+      console.error('Error saving search history to localStorage:', err);
+    }
   }
 
   function normalizeKey(user) {
@@ -217,17 +227,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function buildUrl(user) {
-    try {
-      const params = new URLSearchParams();
+    const params = new URLSearchParams();
 
-      if (user && user.trim() !== '') {
-        params.set('user', user);
-      }
-
-      return window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-    } catch {
-      return window.location.pathname;
+    if (user && user.trim() !== '') {
+      params.set('user', user);
     }
+
+    return window.location.pathname + (params.toString() ? '?' + params.toString() : '');
   }
 
   function renderHistory() {
@@ -323,26 +329,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function initializeView() {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const viewParam = params.get('view');
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('view');
 
-      if (viewParam === 'history') {
-        renderHistory();
-        return;
-      }
+    if (viewParam === 'history') {
+      renderHistory();
+      return;
+    }
 
-      if (viewParam === 'latestFromHistory') {
-        fetchLatestFromHistory();
-        return;
-      }
+    if (viewParam === 'latestFromHistory') {
+      fetchLatestFromHistory();
+      return;
+    }
 
-      const userParam = params.get('user');
+    const userParam = params.get('user');
 
-      if (userParam && userParam.trim() !== '' && !hasErrorMessage()) {
-        recordSearch(userParam);
-      }
-    } catch {}
+    if (userParam && userParam.trim() !== '' && !hasErrorMessage()) {
+      recordSearch(userParam);
+    }
   }
 
   initializeView();
