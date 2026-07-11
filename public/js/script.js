@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let state = null;
 
-  function renderLatestMatches(vods, notFound = [], notStreamed = [], error) {
+  function renderLatestMatches(vods, notFound = [], notPlayed = [], error) {
     const container = document.getElementById('latestMatchesContainer');
     const statusDiv = document.getElementById('latestFromHistoryStatus');
     if (!container) return;
@@ -33,11 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Display users that exist but have no streams this season
-    if (notStreamed.length > 0) {
+    if (notPlayed.length > 0) {
       const infoP = document.createElement('p');
       infoP.style.color = '#666';
       infoP.style.fontStyle = 'italic';
-      infoP.textContent = `No matches found this season (including private matches) for: ${notStreamed.join(', ')}`;
+      infoP.textContent = `No matches found this season (including private matches) for: ${notPlayed.join(', ')}`;
       container.appendChild(infoP);
     }
 
@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Batch-fetch latest vods for all players server-side to reduce client load
     const players = state.history.map((e) => e.user).filter(Boolean);
     if (players.length === 0) {
-      renderLatestMatches([], []);
+      renderLatestMatches([], [], []);
       return;
     }
 
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const json = await res.json();
       state.allVods = json.vods || [];
       state.notFound = json.notFound || [];
-      state.notStreamed = json.notStreamed || [];
+      state.notPlayed = json.notPlayed || [];
     } catch (err) {
       renderLatestMatches([], [], [], 'An internal error occurred. Check the browser console for more info.');
       console.error(err);
@@ -152,11 +152,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (state.allVods.length === 0) {
-      renderLatestMatches([], state.notFound, state.notStreamed);
+      renderLatestMatches([], state.notFound, state.notPlayed);
       return;
     }
 
-    renderLatestMatches(state.allVods, state.notFound, state.notStreamed);
+    renderLatestMatches(state.allVods, state.notFound, state.notPlayed);
   }
 
   // --- Search history (client-side using localStorage) ---
