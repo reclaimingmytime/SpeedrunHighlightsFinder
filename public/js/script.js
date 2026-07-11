@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderLatestMatches(vods, notFound = []) {
     const container = document.getElementById('latestMatchesContainer');
-    const controlsDiv = document.getElementById('latestFromHistoryControls');
+    const statusDiv = document.getElementById('latestFromHistoryStatus');
     if (!container) return;
 
     container.innerHTML = '';
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const p = document.createElement('p');
       p.textContent = 'No highlights found.';
       container.appendChild(p);
-      if (controlsDiv) controlsDiv.innerHTML = '';
+      if (statusDiv) statusDiv.innerHTML = '';
       return;
     }
 
@@ -66,12 +66,9 @@ document.addEventListener('DOMContentLoaded', () => {
       container.appendChild(p);
     }
 
-    // Add minimal controls to match regular highlights page styling
-    if (controlsDiv) {
-      controlsDiv.innerHTML = '';
-
-      const hr = document.createElement('hr');
-      controlsDiv.appendChild(hr);
+    // Remove loading text
+    if (statusDiv) {
+      statusDiv.innerHTML = '';
     }
   }
 
@@ -106,9 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       container.innerHTML = '';
-      const loading = document.createElement('p');
-      loading.textContent = 'Loading latest matches from history...';
-      container.appendChild(loading);
     }
 
     // Batch-fetch latest vods for all players server-side to reduce client load
@@ -322,182 +316,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- View switching ---
-  const latestButton = document.getElementById('viewLatestBtn');
-  const latestFromHistoryButton = document.getElementById('viewLatestFromHistoryBtn');
-
-  const historyButton = document.getElementById('viewHistoryBtn');
-
-  const latestContainer = document.getElementById('latestMatchesContainer');
-  const historyPanel = document.getElementById('searchHistoryPanel');
-  const searchForm = document.getElementById('searchForm');
-
-  function updateUrlViewParam(mode) {
-    try {
-      const url = new URL(window.location.href);
-
-      // support custom view modes. 'latest' means no view param, 'history' is explicit,
-      // other modes will be stored in the 'view' query param (e.g. 'latestFromHistory')
-      if (mode === 'history') {
-        url.searchParams.set('view', 'history');
-      } else if (mode === 'latest') {
-        url.searchParams.delete('view');
-      } else {
-        url.searchParams.set('view', mode);
-      }
-
-      window.history.replaceState({}, '', url.toString());
-    } catch {}
+  // --- Initialize pages ---
+  if (document.getElementById('historyList')) {
+    renderHistory();
   }
 
-  function switchView(mode) {
-    if (mode === 'history') {
-      if (latestContainer) {
-        latestContainer.style.display = 'none';
-      }
-
-      if (historyPanel) {
-        historyPanel.style.display = '';
-      }
-
-      if (searchForm) {
-        searchForm.style.display = 'none';
-      }
-
-      const controlsDiv = document.getElementById('latestFromHistoryControls');
-      if (controlsDiv) {
-        controlsDiv.style.display = 'none';
-      }
-
-      renderHistory();
-      updateUrlViewParam('history');
-
-      if (historyButton) {
-        historyButton.classList.add('nav-inactive');
-      }
-
-      if (latestButton) {
-        latestButton.classList.remove('nav-inactive');
-      }
-
-      if (latestFromHistoryButton) {
-        latestFromHistoryButton.classList.remove('nav-inactive');
-      }
-    } else if (mode === 'latestFromHistory') {
-      // show latest container but load aggregated results from local history
-      if (latestContainer) {
-        latestContainer.style.display = '';
-      }
-
-      if (historyPanel) {
-        historyPanel.style.display = 'none';
-      }
-
-      if (searchForm) {
-        searchForm.style.display = 'none';
-      }
-
-      const controlsDiv = document.getElementById('latestFromHistoryControls');
-      if (controlsDiv) {
-        controlsDiv.style.display = '';
-      }
-
-      updateUrlViewParam(mode);
-
-      if (latestFromHistoryButton) {
-        latestFromHistoryButton.classList.add('nav-inactive');
-      }
-
-      if (latestButton) {
-        latestButton.classList.remove('nav-inactive');
-      }
-
-      if (historyButton) {
-        historyButton.classList.remove('nav-inactive');
-      }
-
-      // trigger the fetch for aggregated results
-      fetchLatestFromHistory();
-    } else {
-      if (latestContainer) {
-        latestContainer.style.display = '';
-      }
-
-      if (historyPanel) {
-        historyPanel.style.display = 'none';
-      }
-
-      if (searchForm) {
-        searchForm.style.display = '';
-      }
-
-      const controlsDiv = document.getElementById('latestFromHistoryControls');
-      if (controlsDiv) {
-        controlsDiv.style.display = 'none';
-      }
-
-      updateUrlViewParam(mode);
-
-      if (latestButton) {
-        latestButton.classList.add('nav-inactive');
-      }
-
-      if (historyButton) {
-        historyButton.classList.remove('nav-inactive');
-      }
-
-      if (latestFromHistoryButton) {
-        latestFromHistoryButton.classList.remove('nav-inactive');
-      }
-    }
+  if (document.getElementById('latestFromHistoryStatus')) {
+    fetchLatestFromHistory();
   }
 
-  if (latestButton) {
-    // clicking Matches should redirect to the canonical latest matches page (reload)
-    latestButton.addEventListener('click', (e) => {
-      e.preventDefault();
-      // navigate to the current pathname (clears any view query param)
-      window.location.href = window.location.pathname;
+  // --- Record search to display number of searches in history ---
+  const userInput = document.getElementById('user');
+
+  const form = document.getElementById('searchForm');
+
+  if (form && userInput) {
+    form.addEventListener('submit', () => {
+      recordSearch(userInput.value);
     });
   }
-
-  if (historyButton) {
-    historyButton.addEventListener('click', (e) => {
-      e.preventDefault();
-      switchView('history');
-    });
-  }
-
-  if (latestFromHistoryButton) {
-    latestFromHistoryButton.addEventListener('click', (e) => {
-      e.preventDefault();
-      switchView('latestFromHistory');
-    });
-  }
-
-  // --- Initial view logic ---
-  let initialMode = 'latest';
-
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const userParam = params.get('user');
-    const viewParam = params.get('view');
-
-    if (viewParam === 'history') {
-      initialMode = 'history';
-    } else if (viewParam) {
-      // preserve custom latest view modes (e.g. latestFromHistory)
-      initialMode = viewParam;
-    } else {
-      initialMode = 'latest';
-
-      if (userParam && userParam.trim() !== '' && !hasErrorMessage()) {
-        recordSearch(userParam);
-      }
-    }
-  } catch {}
-
-  switchView(initialMode);
 
   // --- Clear history button ---
   const clearButton = document.getElementById('clearHistory');

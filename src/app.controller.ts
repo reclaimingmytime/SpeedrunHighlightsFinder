@@ -12,16 +12,32 @@ export class AppController {
     @Query('user') user?: string,
     @Query('before') before?: number,
     @Query('season') season?: number,
+    @Query('view') view?: string,
     @Req() req?: Request,
   ) {
     const includeOpponent = req?.cookies?.includeOpponent === 'true';
-    const response = await this.appService.getVods(user, before, season, includeOpponent);
-    return {
-      vods: response.allVods,
-      lastMatchId: response.lastMatchId,
-      season: response.parsedSeason,
-      user: user || '',
+
+    const mode = view === 'history' || view === 'latestFromHistory' ? view : 'latest';
+
+    const base = {
+      view: mode,
+      user: user ?? '',
+      season,
       includeOpponent,
+      isHistory: mode === 'history',
+      isLatestFromHistory: mode === 'latestFromHistory',
+      isLatest: mode === 'latest',
+    };
+
+    if (mode !== 'latest') return base;
+
+    const { allVods, lastMatchId, parsedSeason } = await this.appService.getVods(user, before, season, includeOpponent);
+
+    return {
+      ...base,
+      vods: allVods,
+      lastMatchId,
+      season: parsedSeason,
     };
   }
 
