@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import pLimit from 'p-limit';
+import { readFile, mkdir, writeFile } from 'fs/promises';
 
 /* Types */
 type Timeline = { uuid: string; time: number; type: string };
@@ -154,11 +155,10 @@ export class AppService {
   }
 
   private async getMatch(id: number) {
-    const fs = await import('fs/promises');
     const path = `./cache/match_${id}.json`; // validated in validateMatchIdResponse
 
     try {
-      const data = await fs.readFile(path, 'utf-8');
+      const data = await readFile(path, 'utf-8');
       const match = JSON.parse(data) as MatchData;
 
       this.validateMatchDataResponse(match);
@@ -167,7 +167,7 @@ export class AppService {
       const response = await this.makeApiRequest('matches/' + id);
       this.validateMatchDataResponse(response);
 
-      void this.writeToCache(fs, path, response);
+      void this.writeToCache(path, response);
       return response;
     }
   }
@@ -183,9 +183,9 @@ export class AppService {
     return { vodTimestamp, date, eventUnix: eventAbsoluteUnix };
   }
 
-  private async writeToCache(fs: typeof import('fs/promises'), path: string, response: MatchData) {
-    await fs.mkdir('./cache', { recursive: true });
-    await fs.writeFile(path, JSON.stringify(response));
+  private async writeToCache(path: string, response: MatchData) {
+    await mkdir('./cache', { recursive: true });
+    await writeFile(path, JSON.stringify(response));
   }
 
   private validateSeason(season?: unknown): number | undefined {
