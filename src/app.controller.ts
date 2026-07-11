@@ -44,35 +44,16 @@ export class AppController {
   // JSON endpoint to fetch latest matches for a single user or multiple players (used by client-side history lookup)
   @Get('api/latest')
   async latest(
-    @Query('user') user?: string,
     @Query('players') players?: string,
     @Query('season') season?: number,
     @Query('includeOpponent') includeOpponent?: string,
   ) {
-    const include = includeOpponent === 'true';
+    const response = await this.appService.getVodsForPlayers(players, season, includeOpponent === 'true');
 
-    if (players) {
-      const playersArray = String(players)
-        .split(',')
-        .map((p) => p.trim())
-        .filter(Boolean);
-
-      const response = await this.appService.getVodsForPlayers(playersArray, season, include);
-      return {
-        vods: response.allVods,
-        players: playersArray,
-        season: response.parsedSeason,
-        notFound: response.notFound,
-        notPlayed: response.notPlayed,
-      };
-    }
-
-    // Fall back to single-user behavior for backward compatibility
-    const response = await this.appService.getVods(user, undefined, season, include);
     return {
       vods: response.allVods,
-      user: user || '',
-      season: response.parsedSeason,
+      notFound: response.notFound,
+      notPlayed: response.notPlayed,
     };
   }
 }

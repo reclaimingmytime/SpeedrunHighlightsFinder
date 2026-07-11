@@ -95,8 +95,15 @@ export class AppService {
     return { allVods, lastMatchId, parsedSeason };
   }
 
-  async getVodsForPlayers(players: string[], season?: number, includeOpponent?: boolean) {
-    const parsedSeason = this.validateSeason(season);
+  async getVodsForPlayers(playersInput?: string, season?: number, includeOpponent?: boolean) {
+    if (!playersInput) {
+      throw new BadRequestException('Query "players" is required and must be a comma-separated list of usernames.');
+    }
+
+    const players = String(playersInput)
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
 
     const seen = new Set<string>();
     const allVods: DeathEvent[] = [];
@@ -147,7 +154,6 @@ export class AppService {
 
     return {
       allVods,
-      parsedSeason,
       notFound,
       notPlayed,
     };
