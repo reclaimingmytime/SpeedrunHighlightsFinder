@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import pLimit from 'p-limit';
 
 /* Types */
 type Timeline = { uuid: string; time: number; type: string };
@@ -39,15 +40,21 @@ export class AppService {
     const { lastMatchId, matchIds } = await this.getMatchIDs(user, parsedBefore, parsedSeason);
     const allVods: DeathEvent[] = [];
 
-    for (const matchId of matchIds) {
-      const match = await this.getMatch(matchId);
+    const matches = await Promise.all(matchIds.map((id) => this.getMatch(id)));
 
+    for (const match of matches) {
       const deathTimelines = match.timelines.filter((timeline) => timeline.type === 'projectelo.timeline.death');
       if (deathTimelines.length === 0) {
         continue;
       }
 
-      const uuidToNickname = Object.fromEntries(match.players.map((player) => [player.uuid, player.nickname]));
+      const uuidToNickname = new Map<string, string>();
+      for (const p of match.players) {
+        uuidToNickname.set(p.uuid, p.nickname);
+      }
+
+      const vodMap = new Map(match.vod.map((v) => [v.uuid, v]));
+
       const playerEvents = deathTimelines.map((timeline) => ({
         time: timeline.time,
         uuid: timeline.uuid,
@@ -56,18 +63,21 @@ export class AppService {
       const filteredEvents =
         includeOpponent || !user
           ? playerEvents
-          : playerEvents.filter((event) => uuidToNickname[event.uuid].toLowerCase() === user.toLowerCase());
+          : playerEvents.filter((event) => {
+              const nickname = uuidToNickname.get(event.uuid);
+              return nickname?.toLowerCase() === user.toLowerCase();
+            });
 
       // For each event, check if there is a VOD for the player and compute the timestamp
       const vods = filteredEvents
         .map((event) => {
-          const vod = match.vod.find((v) => v.uuid === event.uuid);
+          const vod = vodMap.get(event.uuid);
           if (vod) {
             const { vodTimestamp, date, eventUnix } = this.getTime(match, event.time, vod.startsAt);
 
             return {
               vodTime: date,
-              vodNickname: uuidToNickname[event.uuid],
+              vodNickname: uuidToNickname.get(event.uuid) || '',
               vodLink: vod.url + '?t=' + (vodTimestamp - VOD_TIMESTAMP_PADDING) + 's',
               eventUnix,
             };
@@ -93,23 +103,33 @@ export class AppService {
     const allVods: DeathEvent[] = [];
     const notFound: string[] = [];
 
-    for (const player of players) {
-      if (!player) continue;
-      try {
-        const resp = await this.getVods(player, undefined, season, includeOpponent);
+    // Use concurrency limiter to avoid overwhelming the API
+    const limit = pLimit(10);
+
+    const results = await Promise.allSettled(
+      players
+        .filter((p) => !!p)
+        .map((player) =>
+          limit(() => this.getVods(player, undefined, season, includeOpponent).then((resp) => ({ player, resp }))),
+        ),
+    );
+
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      const player = players.filter((p) => !!p)[i];
+
+      if (result.status === 'fulfilled') {
+        const { resp } = result.value;
         for (const vod of resp.allVods) {
           if (!seen.has(vod.vodLink)) {
             seen.add(vod.vodLink);
             allVods.push(vod);
           }
         }
-      } catch (err) {
-        // If a user is not found, record it but continue fetching for other users
-        if (err instanceof NotFoundException) {
-          notFound.push(player);
-        } else {
-          throw err;
-        }
+      } else if (result.reason instanceof NotFoundException) {
+        notFound.push(player);
+      } else if (result.reason) {
+        throw result.reason;
       }
     }
 
@@ -147,7 +167,7 @@ export class AppService {
       const response = await this.makeApiRequest('matches/' + id);
       this.validateMatchDataResponse(response);
 
-      await this.writeToCache(fs, path, response);
+      void this.writeToCache(fs, path, response);
       return response;
     }
   }

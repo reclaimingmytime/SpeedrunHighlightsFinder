@@ -25,6 +25,7 @@
     "@nestjs/platform-express": "^11.1.27",
     "cookie-parser": "^1.4.7",
     "hbs": "^4.2.1",
+    "p-limit": "^7.3.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
