@@ -37,8 +37,9 @@ export class AppService {
   async getVods(user?: string, before?: number, season?: number, includeOpponent?: boolean) {
     const parsedSeason = this.validateSeason(season);
     const parsedBefore = this.validateBefore(before);
+    const validatedUser = this.validateUsername(user);
 
-    const { lastMatchId, matchIds } = await this.getMatchIDs(user, parsedBefore, parsedSeason);
+    const { lastMatchId, matchIds } = await this.getMatchIDs(validatedUser, parsedBefore, parsedSeason);
     const allVods: DeathEvent[] = [];
 
     const matches = await Promise.all(matchIds.map((id) => this.getMatch(id)));
@@ -62,11 +63,11 @@ export class AppService {
       }));
 
       const filteredEvents =
-        includeOpponent || !user
+        includeOpponent || !validatedUser
           ? playerEvents
           : playerEvents.filter((event) => {
               const nickname = uuidToNickname.get(event.uuid);
-              return nickname?.toLowerCase() === user.toLowerCase();
+              return nickname?.toLowerCase() === validatedUser.toLowerCase();
             });
 
       const vods = filteredEvents
@@ -220,6 +221,20 @@ export class AppService {
       throw new BadRequestException('Query "before" must be a number greater between 0 and 2147483647.');
     }
     return parsed;
+  }
+
+  private validateUsername(username?: string): string | undefined {
+    if (username === undefined || username === '') return undefined;
+
+    const minecraftUsernameRegex = /^[a-zA-Z0-9_]{3,16}$/;
+
+    if (!minecraftUsernameRegex.test(username)) {
+      throw new BadRequestException(
+        'Username must be a valid Minecraft username (3-16 characters, only letters, numbers, and underscores).',
+      );
+    }
+
+    return username;
   }
 
   private validateMatchDataResponse(response: any): asserts response is MatchData {

@@ -186,17 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function hasErrorMessage() {
-    const latestContainer = document.getElementById('latestMatchesContainer');
-
-    if (!latestContainer) return false;
-
-    const text = latestContainer.textContent || '';
-
-    return (
-      text.toLowerCase().includes('does not exist') ||
-      text.toLowerCase().includes('not found') ||
-      text.toLowerCase().includes('error')
-    );
+    return document.getElementById('error') !== null;
   }
 
   function recordSearch(user) {
