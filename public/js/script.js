@@ -181,6 +181,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function clearHistory() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (err) {
+      console.error('Error removing search history from localStorage:', err);
+    }
+    renderHistory();
+  }
+
   function normalizeKey(user) {
     return (user || '').trim().toLowerCase();
   }
@@ -218,12 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       saveHistory(history);
     }
-  }
-
-  function clearHistory() {
-    if (!localStorage) return;
-    localStorage.removeItem(STORAGE_KEY);
-    renderHistory();
   }
 
   function buildUrl(user) {
