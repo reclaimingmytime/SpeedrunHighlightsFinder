@@ -239,9 +239,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderHistory() {
     const historyContainer = document.getElementById('historyContainer');
 
-    const emptyMessage = document.getElementById('historyEmptyMessage');
+    const infoMessage = document.getElementById('historyInfoMessage');
 
-    if (!historyContainer || !emptyMessage) return;
+    if (!historyContainer || !infoMessage) return;
 
     const history = loadHistory();
 
@@ -257,14 +257,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (entries.length === 0) {
       historyContainer.innerHTML = '';
 
-      emptyMessage.style.display = '';
+      infoMessage.innerHTML = 'No history yet. Searches will be recorded here.';
+      infoMessage.style.display = '';
 
       return;
     }
 
-    emptyMessage.style.display = 'none';
-
     entries.sort((a, b) => new Date(b.last) - new Date(a.last));
+
+    infoMessage.innerHTML = `Search history (${entries.length}/${MAX_HISTORY}). <span title="Your ${MAX_HISTORY} most recent searches are saved; older searches are automatically removed.">&#9432;</span>`;
+    infoMessage.style.display = '';
 
     historyContainer.innerHTML = '';
 
