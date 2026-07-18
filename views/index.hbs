@@ -127,7 +127,7 @@
             <tr style="position: sticky;top: 0;background-color: #f9f9f9;">
                 <th>Player</th>
                 <th>Difference (secs)</th>
-                <th>Date & Time</th>
+                <th aria-sort="descending">Date & Time</th>
                 <th class="no-sort">VOD</th>
             </tr>
             </thead>
@@ -136,7 +136,7 @@
                 <tr>
                     <td>
                         <a href="?user={{player}}">
-                            <img src="https://mineskin.eu/avatar/{{player}}/8.svg" class="avatar" alt="Player Avatar">{{player}}
+                            <img src="https://mineskin.eu/avatar/{{player}}/8.svg" class="avatar" style="padding-right: 4px" alt="Player Avatar">{{player}}
                         </a>
                     </td>
 
@@ -144,7 +144,7 @@
                         {{timeDifferenceSeconds}}
                     </td>
 
-                    <td>
+                    <td data-sort="{{eventUnix}}">
                         {{date}}
                     </td>
 
