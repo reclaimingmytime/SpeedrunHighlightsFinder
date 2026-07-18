@@ -67,10 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const img = document.createElement('img');
       img.src = 'https://mineskin.eu/avatar/' + encodeURIComponent(vod.vodNickname) + '/8.svg';
       img.alt = 'Player Avatar';
-      img.style.height = '18px';
-      img.style.display = 'inline';
-      img.style.marginBottom = '0';
-      img.style.marginRight = '8px';
+      img.className = 'avatar';
 
       avatarAnchor.appendChild(img);
 
@@ -293,9 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       img.alt = 'Player Avatar';
-      img.style.height = '18px';
-      img.style.display = 'inline';
-      img.style.marginBottom = '0';
+      img.className = 'avatar';
 
       // link text
       const linkText = document.createTextNode(

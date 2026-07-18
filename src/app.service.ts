@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import pLimit from 'p-limit';
 import { readFile, mkdir, writeFile } from 'fs/promises';
+import { readdir } from 'node:fs/promises';
 
 /* Types */
 type Timeline = { uuid: string; time: number; type: string };
@@ -12,9 +13,17 @@ type MatchData = {
   timelines: Timeline[];
   vod: Vod[];
   players: { uuid: string; nickname: string }[];
-  result: { time: number };
+  result: { uuid: string; time: number };
+  forfeited: boolean;
 };
 type DeathEvent = { vodNickname: string; vodTime: string; vodLink: string; eventUnix: number };
+type DragonRaceCondition = {
+  player: string;
+  timeDifferenceSeconds: number;
+  vodLink: string;
+  date: string;
+  eventUnix: number;
+};
 
 type ApiResponseData = BasicMatchData[] | MatchData | string;
 type ApiResponse = {
@@ -45,6 +54,10 @@ export class AppService {
     const matches = await Promise.all(matchIds.map((id) => this.getMatch(id)));
 
     for (const match of matches) {
+      if (match.vod.length === 0 || match.forfeited) {
+        continue;
+      }
+
       const deathTimelines = match.timelines.filter((timeline) => timeline.type === 'projectelo.timeline.death');
       if (deathTimelines.length === 0) {
         continue;
@@ -157,6 +170,20 @@ export class AppService {
       notFound,
       notPlayed,
     };
+  }
+
+  private async getCachedMatch(id: number): Promise<MatchData | null> {
+    const path = `./cache/match_${id}.json`;
+
+    try {
+      const data = await readFile(path, 'utf-8');
+      const match = JSON.parse(data) as MatchData;
+
+      this.validateMatchDataResponse(match);
+      return match;
+    } catch {
+      return null;
+    }
   }
 
   private async getMatchIDs(user?: string, before?: number, season?: number) {
@@ -277,6 +304,75 @@ export class AppService {
 
     this.handleResponseError(responseJson, endpoint);
     return responseJson.data;
+  }
+
+  private findDragonRaceCondition(match: MatchData): DragonRaceCondition | null {
+    if (match.forfeited || match.vod.length === 0) {
+      return null;
+    }
+
+    const dragonDeaths = match.timelines.filter((timeline) => timeline.type === 'projectelo.timeline.dragon_death');
+
+    if (dragonDeaths.length < 2) {
+      return null;
+    }
+
+    const winnerUuid = match.result.uuid;
+
+    const winnerDragonDeath = dragonDeaths.find((event) => event.uuid === winnerUuid);
+
+    const loserDragonDeath = dragonDeaths.find((event) => event.uuid !== winnerUuid);
+
+    // Both players did not kill the dragon
+    if (!winnerDragonDeath || !loserDragonDeath) {
+      return null;
+    }
+
+    const uuidToNickname = new Map(match.players.map((p) => [p.uuid, p.nickname]));
+
+    const vod = match.vod.find((v) => v.uuid === loserDragonDeath.uuid);
+
+    // Need VOD for timestamp
+    if (!vod) {
+      return null;
+    }
+
+    const { vodTimestamp, date, eventUnix } = this.getTime(match, loserDragonDeath.time, vod.startsAt);
+
+    return {
+      player: uuidToNickname.get(loserDragonDeath.uuid) ?? '',
+      timeDifferenceSeconds: Math.abs(loserDragonDeath.time - winnerDragonDeath.time) / 1000,
+      vodLink: `${vod.url}?t=${Math.max(0, vodTimestamp - VOD_TIMESTAMP_PADDING)}s`,
+      date,
+      eventUnix,
+    };
+  }
+
+  async getDragonRaceConditions() {
+    const conditions: DragonRaceCondition[] = [];
+
+    const files = await readdir('./cache').catch(() => []);
+
+    const matchIds = files
+      .filter((file) => /^match_\d+\.json$/.test(file))
+      .map((file) => Number(file.match(/\d+/)?.[0]))
+      .filter(Boolean);
+
+    for (const id of matchIds) {
+      const match = await this.getCachedMatch(id);
+
+      if (!match) {
+        continue;
+      }
+
+      const condition = this.findDragonRaceCondition(match);
+
+      if (condition) {
+        conditions.push(condition);
+      }
+    }
+
+    return conditions.sort((a, b) => b.eventUnix - a.eventUnix);
   }
 
   private handleResponseError(responseJson: ApiResponse, endpoint: string) {

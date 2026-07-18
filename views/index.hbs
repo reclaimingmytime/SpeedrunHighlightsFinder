@@ -7,6 +7,10 @@
           href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛏️</text></svg>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sakura.css@1.5.1/css/sakura.css"
           integrity="sha256-rFoyAIn+rtUKyWRsd6hDbzlnJmklIRroszMxG/mjxeY=" crossorigin="anonymous">
+    {{#if isDragonRace}}
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css" integrity="sha256-LNw6Q1G7k9QbEjRIWjE5LjXyW4lE3qiqjdm+xSyPk/I=" crossorigin="anonymous">
+    {{/if}}
+
     <style>
         a:visited {
             color: #982c61;
@@ -14,6 +18,12 @@
 
         p {
             margin-bottom: 16px;
+        }
+
+        .avatar {
+            height:18px;
+            display:inline;
+            margin-bottom:0;
         }
 
         /* nav link states */
@@ -40,6 +50,10 @@
     |
     <a href="/?view=history" class="{{#if isHistory}}nav-inactive{{/if}}">
         History
+    </a>
+    |
+    <a href="/?view=dragonrace" class="{{#if isDragonRace}}nav-inactive{{/if}}">
+        Dragon Race
     </a>
 </div>
 
@@ -69,8 +83,7 @@
             {{#each vods}}
                 <p>
                     <a href="?user={{vodNickname}}" title="See all highlights by player">
-                    <img src="https://mineskin.eu/avatar/{{vodNickname}}/8.svg"
-                         style="height: 18px; display: inline; margin-bottom: 0;" alt="Player Avatar">
+                        <img src="https://mineskin.eu/avatar/{{vodNickname}}/8.svg" class="avatar" alt="Player Avatar">
                     </a>
                     <a href="{{vodLink}}" rel="noreferrer" target="_blank">{{vodNickname}} at {{vodTime}}</a>
                 </p>
@@ -103,6 +116,51 @@
         <button id="clearHistory" type="button" style="display: none;">Clear history</button>
     </div>
 
+{{/if}}
+
+{{#if isDragonRace}}
+    <p>All dragon perch races where both players killed the dragon in previously accessed matches.</p>
+
+    {{#if dragonRaceConditions.length}}
+        <table class="sortable">
+            <thead>
+            <tr style="position: sticky;top: 0;background-color: #f9f9f9;">
+                <th>Player</th>
+                <th>Difference (secs)</th>
+                <th>Date & Time</th>
+                <th class="no-sort" >VOD</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{#each dragonRaceConditions}}
+                <tr>
+                    <td>
+                        <a href="?user={{player}}">
+                        <img src="https://mineskin.eu/avatar/{{player}}/8.svg" class="avatar" alt="Player Avatar"> {{player}}
+                        </a>
+                    </td>
+
+                    <td>
+                        {{timeDifferenceSeconds}}
+                    </td>
+
+                    <td>
+                        {{date}}
+                    </td>
+
+                    <td>
+                        <a href="{{vodLink}}" rel="noreferrer" target="_blank">
+                            Watch
+                        </a>
+                    </td>
+                </tr>
+            {{/each}}
+            </tbody>
+        </table>
+    {{else}}
+        <p>No cached dragon race conditions found.</p>
+    {{/if}}
+    <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable.min.js" integrity="sha256-qIfPQq1baWczZMUpr+hQCzHfvj54wuYjvuZDD8abmQ8=" crossorigin="anonymous"></script>
 {{/if}}
 
 <script src="/js/script.js"></script>

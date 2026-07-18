@@ -17,7 +17,7 @@ export class AppController {
   ) {
     const includeOpponent = req?.cookies?.includeOpponent === 'true';
 
-    const mode = view === 'history' || view === 'latestFromHistory' ? view : 'latest';
+    const mode = view === 'history' || view === 'latestFromHistory' || view === 'dragonrace' ? view : 'latest';
 
     const base = {
       view: mode,
@@ -27,7 +27,17 @@ export class AppController {
       isHistory: mode === 'history',
       isLatestFromHistory: mode === 'latestFromHistory',
       isLatest: mode === 'latest',
+      isDragonRace: mode === 'dragonrace',
     };
+
+    if (mode === 'dragonrace') {
+      const conditions = await this.appService.getDragonRaceConditions();
+
+      return {
+        ...base,
+        dragonRaceConditions: conditions,
+      };
+    }
 
     if (mode !== 'latest') return base;
 
