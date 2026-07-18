@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const p = document.createElement('p');
       const avatarAnchor = document.createElement('a');
       avatarAnchor.href = buildUrl(vod.vodNickname);
+      avatarAnchor.style.paddingRight = '4px';
       avatarAnchor.title = 'See all highlights by player';
 
       const img = document.createElement('img');
