@@ -7,7 +7,7 @@
           href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛏️</text></svg>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sakura.css@1.5.1/css/sakura.css"
           integrity="sha256-rFoyAIn+rtUKyWRsd6hDbzlnJmklIRroszMxG/mjxeY=" crossorigin="anonymous">
-    {{#if isDragonRace}}
+    {{#if (eq view "dragonrace")}}
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css" integrity="sha256-LNw6Q1G7k9QbEjRIWjE5LjXyW4lE3qiqjdm+xSyPk/I=" crossorigin="anonymous">
     {{/if}}
 
@@ -40,24 +40,24 @@
 <h1>MCSR Ranked Highlights</h1>
 
 <div style="margin-bottom: 0.75rem;">
-    <a href="/" class="{{#if isLatest}}nav-inactive{{/if}}">
+    <a href="/" class="{{#if (eq view "latest")}}nav-inactive{{/if}}">
         Highlights
     </a>
     |
-    <a href="/?view=latestFromHistory" class="{{#if isLatestFromHistory}}nav-inactive{{/if}}">
+    <a href="/?view=latestFromHistory" class="{{#if (eq view "latestFromHistory")}}nav-inactive{{/if}}">
         Latest from History
     </a>
     |
-    <a href="/?view=history" class="{{#if isHistory}}nav-inactive{{/if}}">
+    <a href="/?view=history" class="{{#if (eq view "history")}}nav-inactive{{/if}}">
         History
     </a>
     |
-    <a href="/?view=dragonrace" class="{{#if isDragonRace}}nav-inactive{{/if}}">
+    <a href="/?view=dragonrace" class="{{#if (eq view "dragonrace")}}nav-inactive{{/if}}">
         Dragon Race
     </a>
 </div>
 
-{{#if isLatest}}
+{{#if (eq view "latest")}}
     <form id="searchForm">
         <label for="user" style="display: inline">Player:</label>
         <input type="search" id="user" name="user" placeholder="All players" value="{{user}}">
@@ -69,7 +69,7 @@
 {{/if}}
 
 
-{{#if isLatestFromHistory}}
+{{#if (eq view "latestFromHistory")}}
     <div id="latestFromHistoryStatus">
         Loading latest matches...
     </div>
@@ -79,7 +79,7 @@
     {{#if error}}
         <p id="error" style="color: red;">{{error}}</p>
     {{else}}
-        {{#if isLatest}}
+        {{#if (eq view "latest")}}
             {{#each vods}}
                 <p>
                     <a href="?user={{vodNickname}}" title="See all highlights by player">
@@ -107,7 +107,7 @@
 </div>
 
 
-{{#if isHistory}}
+{{#if (eq view "history")}}
     <div id="searchHistoryPanel" style="margin-top: 1rem;">
         <p id="historyInfoMessage" style="display:none;"></p>
 
@@ -118,7 +118,7 @@
 
 {{/if}}
 
-{{#if isDragonRace}}
+{{#if (eq view "dragonrace")}}
     <p>All dragon perch races where both players killed the dragon in previously accessed matches.</p>
 
     {{#if dragonRaceConditions.length}}

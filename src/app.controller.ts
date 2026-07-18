@@ -15,36 +15,28 @@ export class AppController {
     @Query('view') view?: string,
     @Req() req?: Request,
   ) {
-    const includeOpponent = req?.cookies?.includeOpponent === 'true';
+    if (view === 'history' || view === 'latestFromHistory') {
+      return {
+        view,
+      };
+    }
 
-    const mode = view === 'history' || view === 'latestFromHistory' || view === 'dragonrace' ? view : 'latest';
-
-    const base = {
-      view: mode,
-      user: user ?? '',
-      season,
-      includeOpponent,
-      isHistory: mode === 'history',
-      isLatestFromHistory: mode === 'latestFromHistory',
-      isLatest: mode === 'latest',
-      isDragonRace: mode === 'dragonrace',
-    };
-
-    if (mode === 'dragonrace') {
+    if (view === 'dragonrace') {
       const conditions = await this.appService.getDragonRaceConditions();
 
       return {
-        ...base,
+        view,
         dragonRaceConditions: conditions,
       };
     }
 
-    if (mode !== 'latest') return base;
-
+    const includeOpponent = req?.cookies?.includeOpponent === 'true';
     const { allVods, lastMatchId, parsedSeason } = await this.appService.getVods(user, before, season, includeOpponent);
 
     return {
-      ...base,
+      view: 'latest',
+      user: user ?? '',
+      includeOpponent,
       vods: allVods,
       lastMatchId,
       season: parsedSeason,
