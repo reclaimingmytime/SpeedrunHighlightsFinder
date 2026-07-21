@@ -173,10 +173,8 @@ export class AppService {
   }
 
   private async getCachedMatch(id: number): Promise<MatchData | null> {
-    const path = `./cache/match_${id}.json`;
-
     try {
-      const data = await readFile(path, 'utf-8');
+      const data = await readFile(`./cache/match_${id}.json`, 'utf-8');
       const match = JSON.parse(data) as MatchData;
 
       this.validateMatchDataResponse(match);
@@ -184,6 +182,23 @@ export class AppService {
     } catch {
       return null;
     }
+  }
+
+  private async getLiveMatchAndCache(id: number) {
+    const response = await this.makeApiRequest('matches/' + id);
+    this.validateMatchDataResponse(response);
+
+    void this.writeToCache(`./cache/match_${id}.json`, response);
+    return response;
+  }
+
+  private async getMatch(id: number) {
+    const cachedMatch = await this.getCachedMatch(id);
+    if (cachedMatch) {
+      return cachedMatch;
+    }
+
+    return this.getLiveMatchAndCache(id);
   }
 
   private async getMatchIDs(user?: string, before?: number, season?: number) {
@@ -198,24 +213,6 @@ export class AppService {
       .map((item) => item.id);
 
     return { lastMatchId, matchIds };
-  }
-
-  private async getMatch(id: number) {
-    const path = `./cache/match_${id}.json`; // validated in validateMatchIdResponse
-
-    try {
-      const data = await readFile(path, 'utf-8');
-      const match = JSON.parse(data) as MatchData;
-
-      this.validateMatchDataResponse(match);
-      return match;
-    } catch {
-      const response = await this.makeApiRequest('matches/' + id);
-      this.validateMatchDataResponse(response);
-
-      void this.writeToCache(path, response);
-      return response;
-    }
   }
 
   private getTime(match: MatchData, eventTime: number, vodStart: number) {
