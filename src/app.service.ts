@@ -339,7 +339,7 @@ export class AppService {
     return {
       player: uuidToNickname.get(loserDragonDeath.uuid) ?? '',
       timeDifferenceSeconds: Math.abs(loserDragonDeath.time - winnerDragonDeath.time) / 1000,
-      vodLink: `${vod.url}?t=${Math.max(0, vodTimestamp - VOD_TIMESTAMP_PADDING)}s`,
+      vodLink: `${vod.url}?t=${vodTimestamp}s`,
       date,
       eventUnix,
     };
