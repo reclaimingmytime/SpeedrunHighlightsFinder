@@ -1,4 +1,4 @@
-import { Get, Controller, Render, Query, Req } from '@nestjs/common';
+import { Controller, Get, Query, Render, Req } from '@nestjs/common';
 import { AppService } from './app.service';
 import { Request } from 'express';
 
@@ -57,5 +57,11 @@ export class AppController {
       notFound: response.notFound,
       notPlayed: response.notPlayed,
     };
+  }
+
+  // Return last public (has VOD) match date per player from cached matches
+  @Get('api/lastPublicMatches')
+  async lastPublicMatches(@Query('players') players?: string) {
+    return await this.appService.getLastPublicMatchesForPlayers(players);
   }
 }

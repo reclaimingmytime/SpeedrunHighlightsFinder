@@ -238,95 +238,157 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderHistory() {
-    const historyContainer = document.getElementById('historyContainer');
-
+    const tableBody = document.getElementById('historyTableBody');
     const infoMessage = document.getElementById('historyInfoMessage');
-
-    if (!historyContainer || !infoMessage) return;
+    const historyTable = document.getElementById('historyTable');
+    const recalcBtn = document.getElementById('recalcLastPublicMatches');
+    if (!tableBody || !infoMessage) return;
 
     const history = loadHistory();
+    const hasHistory = Object.keys(history).length > 0;
 
+    // Show/hide table + buttons
+    if (historyTable) {
+      historyTable.style.display = hasHistory ? '' : 'none';
+    }
     if (clearButton) {
-      clearButton.style.display = Object.keys(history).length > 0 ? '' : 'none';
+      clearButton.style.display = hasHistory ? '' : 'none';
+    }
+    if (recalcBtn) {
+      recalcBtn.style.display = hasHistory ? '' : 'none';
     }
 
-    const entries = Object.entries(history).map(([key, value]) => ({
-      key,
-      ...value,
-    }));
-
+    const entries = Object.entries(history).map(([key, value]) => ({ key, ...value }));
     if (entries.length === 0) {
-      historyContainer.innerHTML = '';
-
+      tableBody.innerHTML = '';
       infoMessage.innerHTML = 'No history yet. Searches will be recorded here.';
       infoMessage.style.display = '';
-
       return;
     }
 
     entries.sort((a, b) => new Date(b.last) - new Date(a.last));
-
     infoMessage.innerHTML = `Search history (${entries.length}/${MAX_HISTORY}). <span title="Your ${MAX_HISTORY} most recent searches are saved; older searches are automatically removed.">&#9432;</span>`;
     infoMessage.style.display = '';
 
-    historyContainer.innerHTML = '';
+    tableBody.innerHTML = '';
 
     for (const entry of entries) {
-      const p = document.createElement('p');
+      const tr = document.createElement('tr');
 
-      const displayUser = entry.user || '(all)';
-      const url = buildUrl(entry.user);
-
-      // player link
+      // Player cell
+      const playerTd = document.createElement('td');
       const playerLink = document.createElement('a');
-
-      playerLink.href = url;
+      playerLink.href = buildUrl(entry.user);
       playerLink.title = 'See all highlights by player';
-
-      // avatar image
       const img = document.createElement('img');
-
-      if (entry.user) {
-        img.src = 'https://mineskin.eu/avatar/' + encodeURIComponent(entry.user) + '/8.svg';
-      }
-
+      if (entry.user) img.src = 'https://mineskin.eu/avatar/' + encodeURIComponent(entry.user) + '/8.svg';
       img.alt = 'Player Avatar';
       img.className = 'avatar';
-
-      // link text
-      const linkText = document.createTextNode(
-        ' ' +
-          `${displayUser} — ` +
-          `${entry.count} time${entry.count === 1 ? '' : 's'} ` +
-          `— last: ${new Date(entry.last).toLocaleString()}`,
-      );
-
       playerLink.appendChild(img);
-      playerLink.appendChild(linkText);
+      playerLink.appendChild(document.createTextNode(' ' + (entry.user || '(all)')));
+      playerTd.appendChild(playerLink);
+      tr.appendChild(playerTd);
 
-      // delete button
+      // Times accessed
+      const countTd = document.createElement('td');
+      countTd.textContent = String(entry.count || 0);
+      tr.appendChild(countTd);
+
+      // Last accessed
+      const lastTd = document.createElement('td');
+      lastTd.textContent = new Date(entry.last).toLocaleString();
+      lastTd.setAttribute('data-sort', String(Date.parse(entry.last)));
+      tr.appendChild(lastTd);
+
+      // Last match (initially empty)
+      const publicTd = document.createElement('td');
+      publicTd.textContent = '—';
+      publicTd.title = 'Not calculated yet';
+      publicTd.setAttribute('data-player', entry.user || '');
+      publicTd.setAttribute('data-sort', '');
+      tr.appendChild(publicTd);
+
+      // Delete button
+      const delTd = document.createElement('td');
       const deleteButton = document.createElement('button');
-
       deleteButton.type = 'button';
       deleteButton.textContent = 'Delete';
-      deleteButton.style.marginLeft = '10px';
-
       deleteButton.addEventListener('click', () => {
-        const updatedHistory = loadHistory();
+        tr.style.transition = 'opacity 0.3s ease';
+        tr.style.opacity = '0';
 
-        delete updatedHistory[entry.key];
+        setTimeout(() => {
+          const updatedHistory = loadHistory();
+          delete updatedHistory[entry.key];
+          saveHistory(updatedHistory);
+          renderHistory();
+        }, 300);
+      });
+      delTd.appendChild(deleteButton);
+      tr.appendChild(delTd);
 
-        saveHistory(updatedHistory);
+      tableBody.appendChild(tr);
+    }
+  }
 
-        renderHistory();
+  // Fetch last match dates from server and populate table
+  async function recalculateLastPublicMatches() {
+    const history = loadHistory();
+    const players = Object.values(history)
+      .map((h) => h.user)
+      .filter(Boolean);
+    if (players.length === 0) return;
+
+    try {
+      const params = new URLSearchParams();
+      params.set('players', players.join(','));
+      const res = await fetch('/api/lastPublicMatches?' + params.toString());
+      if (!res.ok) {
+        alert('Could not fetch last matches.');
+        return;
+      }
+      const json = await res.json();
+      const results = json.results || {};
+      let hasMatch = false;
+
+      // Update table cells
+      document.querySelectorAll('[data-player]').forEach((el) => {
+        const player = el.getAttribute('data-player') || '';
+        const iso = results[player] || null;
+        if (iso) {
+          hasMatch = true;
+
+          const ms = Date.parse(iso);
+          el.textContent = new Date(iso).toLocaleString();
+          el.setAttribute('data-sort', String(ms));
+          el.title = '';
+        } else {
+          el.textContent = 'None';
+          el.setAttribute('data-sort', '');
+          el.title = 'No public match found';
+        }
       });
 
-      // assemble
-      p.appendChild(playerLink);
-      p.appendChild(deleteButton);
-
-      historyContainer.appendChild(p);
+      if (hasMatch) {
+        document.getElementById('lastMatch')?.classList.remove('no-sort');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error while recalculating last matches.');
     }
+  }
+
+  // Bind recalc button
+  const recalcBtn = document.getElementById('recalcLastPublicMatches');
+  if (recalcBtn) {
+    recalcBtn.addEventListener('click', () => {
+      recalcBtn.textContent = 'Calculating...';
+      recalcBtn.disabled = true;
+      recalculateLastPublicMatches().finally(() => {
+        recalcBtn.textContent = 'Re-calculate last match';
+        recalcBtn.disabled = false;
+      });
+    });
   }
 
   function initializeView() {

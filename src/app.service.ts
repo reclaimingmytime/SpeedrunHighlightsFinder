@@ -288,6 +288,28 @@ export class AppService {
     }
   }
 
+  private parseAndValidatePlayers(playersInput?: string): string[] {
+    if (!playersInput) {
+      throw new BadRequestException('Query "players" is required and must be a comma-separated list of usernames.');
+    }
+
+    const players = String(playersInput)
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    if (players.length === 0) {
+      throw new BadRequestException('At least one valid username is required.');
+    }
+
+    // Re-use the existing single-username validator
+    for (const p of players) {
+      this.validateUsername(p); // throws BadRequestException if invalid
+    }
+
+    return players;
+  }
+
   private async makeApiRequest(endpoint: string) {
     const response = await fetch('https://api.mcsrranked.com/' + endpoint);
     const responseText = await response.text();
@@ -348,12 +370,7 @@ export class AppService {
   async getDragonRaceConditions() {
     const conditions: DragonRaceCondition[] = [];
 
-    const files = await readdir('./cache').catch(() => []);
-
-    const matchIds = files
-      .filter((file) => /^match_\d+\.json$/.test(file))
-      .map((file) => Number(file.match(/\d+/)?.[0]))
-      .filter(Boolean);
+    const matchIds = await this.getAllCachedMatchIds();
 
     for (const id of matchIds) {
       const match = await this.getCachedMatch(id);
@@ -370,6 +387,51 @@ export class AppService {
     }
 
     return conditions.sort((a, b) => b.eventUnix - a.eventUnix);
+  }
+
+  // For given comma separated players, scan cached matches and return the most recent match.date
+  // where the player participated and the match has at least one VOD (public).
+  async getLastPublicMatchesForPlayers(playersInput?: string) {
+    if (!playersInput) {
+      throw new BadRequestException('Query "players" is required and must be comma-separated list of usernames.');
+    }
+
+    const players = this.parseAndValidatePlayers(playersInput);
+
+    const matchIds = await this.getAllCachedMatchIds();
+
+    const results: Record<string, string | null> = {};
+    for (const p of players) results[p] = null; // ensures all players are present in the results, even if they have no matches
+
+    for (const id of matchIds) {
+      const match = await this.getCachedMatch(id);
+      if (!match) continue;
+      if (!Array.isArray(match.vod) || match.vod.length === 0) continue; // require a VOD
+
+      for (const player of players) {
+        const found = match.players.some((mp) => mp.nickname.toLowerCase() === player.toLowerCase());
+        if (!found) continue;
+
+        const existing = results[player];
+        // match.date appears to be seconds since epoch in MatchData
+        const matchIso = new Date(match.date * 1000).toISOString();
+        if (!existing || matchIso > existing) {
+          results[player] = matchIso;
+        }
+      }
+    }
+
+    return { results };
+  }
+
+  private async getAllCachedMatchIds() {
+    const files = await readdir('./cache').catch(() => []);
+
+    const matchIds = files
+      .filter((file) => /^match_\d+\.json$/.test(file))
+      .map((file) => Number(file.match(/\d+/)?.[0]))
+      .filter(Boolean);
+    return matchIds;
   }
 
   private handleResponseError(responseJson: ApiResponse, endpoint: string) {
