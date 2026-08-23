@@ -73,6 +73,12 @@
 
 
 {{#if (eq view "latestFromHistory")}}
+    <form id="seasonOnlyForm" method="get" style="margin-bottom:0.5rem; display:inline-block;">
+        <input type="hidden" name="view" value="latestFromHistory">
+        <label for="season" style="display:inline">Season:</label>
+        <input type="number" id="season" name="season" min="9" placeholder="current" value="{{season}}" style="display:inline-block; width:79px; margin:0 8px;">
+        <button type="submit" style="display:inline-block;">Set season</button>
+    </form>
     <div id="latestFromHistoryStatus">
         Loading latest matches...
     </div>

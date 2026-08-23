@@ -18,6 +18,7 @@ export class AppController {
     if (view === 'history' || view === 'latestFromHistory') {
       return {
         view,
+        season,
       };
     }
 

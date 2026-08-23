@@ -235,9 +235,9 @@ export class AppService {
     if (season === undefined || season === '') return undefined;
 
     const parsed = Number(season);
-    if (Number.isNaN(parsed) || parsed < 8) {
+    if (Number.isNaN(parsed) || parsed < 9) {
       throw new BadRequestException(
-        'Season must be a number greater than or equal to 8. The MCSR Ranked API does not include VODs for earlier seasons, and those VODs will have expired by now anyway.',
+        'Season must be a number greater than or equal to 9. The MCSR Ranked API does not include all VODs for earlier seasons, and those VODs will have expired by now anyway.',
       );
     }
     return parsed;
