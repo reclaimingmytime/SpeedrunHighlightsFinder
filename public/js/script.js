@@ -385,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
       recalcBtn.textContent = 'Calculating...';
       recalcBtn.disabled = true;
       recalculateLastPublicMatches().finally(() => {
-        recalcBtn.textContent = 'Re-calculate last match';
+        recalcBtn.textContent = 'Re-calculate latest matches';
         recalcBtn.disabled = false;
       });
     });
