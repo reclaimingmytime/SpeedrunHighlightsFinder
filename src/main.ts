@@ -3,8 +3,8 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { RenderExceptionFilter } from './filters/render-exception-filter';
-import * as cookieParser from 'cookie-parser';
-import * as hbs from 'hbs';
+import cookieParser from 'cookie-parser';
+import hbs from 'hbs';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
