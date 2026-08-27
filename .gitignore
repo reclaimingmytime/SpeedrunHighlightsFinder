@@ -1,6 +1,8 @@
-# Cache
+# Custom
 cache/
+tsconfig.build.tsbuildinfo
 
+# NestJS Default
 # compiled output
 /dist
 /node_modules
