@@ -1,10 +1,17 @@
 import { Controller, Get, Query, Render, Req } from '@nestjs/common';
-import { AppService } from './app.service';
 import { Request } from 'express';
+
+import { DragonRaceService } from './services/dragon-race.service';
+import { PlayerService } from './services/player.service';
+import { VodService } from './services/vod.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly vodService: VodService,
+    private readonly playerService: PlayerService,
+    private readonly dragonRaceService: DragonRaceService,
+  ) {}
 
   @Get()
   @Render('index')
@@ -23,7 +30,7 @@ export class AppController {
     }
 
     if (view === 'players') {
-      const playersElo = await this.appService.getAllPlayersElo();
+      const playersElo = await this.playerService.getAllPlayersElo();
 
       return {
         view,
@@ -32,7 +39,7 @@ export class AppController {
     }
 
     if (view === 'dragonrace') {
-      const conditions = await this.appService.getDragonRaceConditions();
+      const conditions = await this.dragonRaceService.getDragonRaceConditions();
 
       return {
         view,
@@ -41,7 +48,8 @@ export class AppController {
     }
 
     const includeOpponent = req?.cookies?.includeOpponent === 'true';
-    const { allVods, lastMatchId, parsedSeason } = await this.appService.getVods(user, before, season, includeOpponent);
+
+    const { allVods, lastMatchId, parsedSeason } = await this.vodService.getVods(user, before, season, includeOpponent);
 
     return {
       view: 'latest',
@@ -53,14 +61,13 @@ export class AppController {
     };
   }
 
-  // JSON endpoint to fetch latest matches for a single user or multiple players (used by client-side history lookup)
   @Get('api/latest')
   async latest(
     @Query('players') players?: string,
     @Query('season') season?: number,
     @Query('includeOpponent') includeOpponent?: string,
   ) {
-    const response = await this.appService.getVodsForPlayers(players, season, includeOpponent === 'true');
+    const response = await this.vodService.getVodsForPlayers(players, season, includeOpponent === 'true');
 
     return {
       vods: response.allVods,
@@ -69,9 +76,8 @@ export class AppController {
     };
   }
 
-  // Return last public (has VOD) match date per player from cached matches
   @Get('api/lastPublicMatches')
   async lastPublicMatches(@Query('players') players?: string) {
-    return await this.appService.getLastPublicMatchesForPlayers(players);
+    return this.playerService.getLastPublicMatchesForPlayers(players);
   }
 }
