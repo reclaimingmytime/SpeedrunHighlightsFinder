@@ -22,6 +22,15 @@ export class AppController {
       };
     }
 
+    if (view === 'players') {
+      const playersElo = await this.appService.getAllPlayersElo();
+
+      return {
+        view,
+        playersElo,
+      };
+    }
+
     if (view === 'dragonrace') {
       const conditions = await this.appService.getDragonRaceConditions();
 

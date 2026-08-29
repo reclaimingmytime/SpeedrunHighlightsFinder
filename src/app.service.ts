@@ -12,7 +12,11 @@ type MatchData = {
   date: number;
   timelines: Timeline[];
   vod: Vod[];
-  players: { uuid: string; nickname: string }[];
+  players: {
+    uuid: string;
+    nickname: string;
+    eloRate?: number;
+  }[];
   result: { uuid: string; time: number };
   forfeited: boolean;
 };
@@ -389,6 +393,69 @@ export class AppService {
     return conditions.sort((a, b) => b.eventUnix - a.eventUnix);
   }
 
+  async getAllPlayersElo() {
+    const matchIds = await this.getAllCachedMatchIds();
+
+    const map = new Map<string, { elo: number | null; seenAt: number }>();
+
+    for (const id of matchIds) {
+      const match = await this.getCachedMatch(id);
+      if (!match) continue;
+
+      if (!Array.isArray(match.vod) || match.vod.length === 0) continue;
+
+      const seenAt = typeof match.date === 'number' ? match.date : 0;
+
+      for (const p of match.players) {
+        if (!p.nickname) continue;
+        const name = p.nickname.trim();
+
+        if (name.toLowerCase() === '[ranked bot]') continue;
+
+        const hasVodForPlayer = Array.isArray(match.vod) && match.vod.some((v) => v.uuid === p.uuid);
+        if (!hasVodForPlayer) continue;
+
+        const eloFromMatch = p.eloRate;
+
+        const existing = map.get(name);
+        if (typeof eloFromMatch === 'number') {
+          // prefer elo from the most recent cached match
+          if (!existing || existing.seenAt < seenAt) {
+            map.set(name, { elo: eloFromMatch, seenAt });
+          }
+        } else if (!existing) {
+          map.set(name, { elo: null, seenAt: 0 });
+        }
+      }
+    }
+
+    const getRank = (elo: number | null) => {
+      if (elo === null) return { rankName: '—', rankIndex: 0, rankEmoji: '' };
+      if (elo <= 599) return { rankName: 'Coal', rankIndex: 1, rankEmoji: '🪨' };
+      if (elo <= 899) return { rankName: 'Iron', rankIndex: 2, rankEmoji: '⛓️' };
+      if (elo <= 1199) return { rankName: 'Gold', rankIndex: 3, rankEmoji: '🥇' };
+      if (elo <= 1499) return { rankName: 'Emerald', rankIndex: 4, rankEmoji: '🟢' };
+      if (elo <= 1999) return { rankName: 'Diamond', rankIndex: 5, rankEmoji: '💎' };
+      return { rankName: 'Netherite', rankIndex: 6, rankEmoji: '🟣' };
+    };
+
+    const results: { player: string; elo: number | null; rankName: string; rankIndex: number; rankEmoji: string }[] =
+      Array.from(map.entries()).map(([player, info]) => {
+        const elo = info.elo;
+        const { rankName, rankIndex, rankEmoji } = getRank(elo);
+        return { player, elo, rankName, rankIndex, rankEmoji };
+      });
+
+    results.sort((a, b) => {
+      if (a.elo === null && b.elo === null) return a.player.localeCompare(b.player, undefined, { sensitivity: 'base' });
+      if (a.elo === null) return 1;
+      if (b.elo === null) return -1;
+      return b.elo - a.elo;
+    });
+
+    return { players: results };
+  }
+
   // For given comma separated players, scan cached matches and return the most recent match.date
   // where the player participated and the match has at least one VOD (public).
   async getLastPublicMatchesForPlayers(playersInput?: string) {
@@ -427,11 +494,10 @@ export class AppService {
   private async getAllCachedMatchIds() {
     const files = await readdir('./cache').catch(() => []);
 
-    const matchIds = files
+    return files
       .filter((file) => /^match_\d+\.json$/.test(file))
       .map((file) => Number(file.match(/\d+/)?.[0]))
       .filter(Boolean);
-    return matchIds;
   }
 
   private handleResponseError(responseJson: ApiResponse, endpoint: string) {

@@ -10,6 +10,9 @@
     {{#if (eq view "dragonrace")}}
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css" integrity="sha256-LNw6Q1G7k9QbEjRIWjE5LjXyW4lE3qiqjdm+xSyPk/I=" crossorigin="anonymous">
     {{/if}}
+    {{#if (eq view "players")}}
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css" integrity="sha256-LNw6Q1G7k9QbEjRIWjE5LjXyW4lE3qiqjdm+xSyPk/I=" crossorigin="anonymous">
+    {{/if}}
     {{#if (eq view "history")}}
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css" integrity="sha256-LNw6Q1G7k9QbEjRIWjE5LjXyW4lE3qiqjdm+xSyPk/I=" crossorigin="anonymous">
     {{/if}}
@@ -57,6 +60,10 @@
     |
     <a href="/?view=dragonrace" class="{{#if (eq view "dragonrace")}}nav-inactive{{/if}}">
         Dragon Race
+    </a>
+    |
+    <a href="/?view=players" class="{{#if (eq view "players")}}nav-inactive{{/if}}">
+        Players
     </a>
 </div>
 
@@ -182,6 +189,41 @@
         </table>
     {{else}}
         <p>No cached dragon race conditions found.</p>
+    {{/if}}
+    <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable.min.js" integrity="sha256-qIfPQq1baWczZMUpr+hQCzHfvj54wuYjvuZDD8abmQ8=" crossorigin="anonymous"></script>
+{{/if}}
+
+
+{{#if (eq view "players")}}
+    <p>All players with a VOD link in the cache and their cached elo.</p>
+
+    {{#if playersElo.players.length}}
+        <table class="sortable">
+            <thead>
+            <tr style="position: sticky;top: 0;background-color: #f9f9f9;">
+                <th>Player</th>
+                <th>Rank</th>
+                <th aria-sort="descending">Elo</th>
+            </tr>
+            </thead>
+            <tbody>
+             {{#each playersElo.players}}
+                 <tr>
+                     <td>
+                         <a href="?user={{player}}">
+                             <img src="https://mineskin.eu/avatar/{{player}}/8.svg" class="avatar" style="padding-right: 4px" alt="Player Avatar">{{player}}
+                         </a>
+                     </td>
+                     <td data-sort="{{rankIndex}}">{{rankEmoji}} {{rankName}}</td>
+                     <td data-sort="{{#if elo}}{{elo}}{{/if}}">
+                         {{#if elo}}{{elo}}{{else}}—{{/if}}
+                     </td>
+                 </tr>
+             {{/each}}
+            </tbody>
+        </table>
+    {{else}}
+        <p>No players found in cache.</p>
     {{/if}}
     <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable.min.js" integrity="sha256-qIfPQq1baWczZMUpr+hQCzHfvj54wuYjvuZDD8abmQ8=" crossorigin="anonymous"></script>
 {{/if}}
