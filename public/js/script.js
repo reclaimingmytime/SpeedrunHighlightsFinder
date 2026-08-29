@@ -316,12 +316,17 @@ document.addEventListener('DOMContentLoaded', () => {
       deleteButton.addEventListener('click', () => {
         tr.style.transition = 'opacity 0.3s ease';
         tr.style.opacity = '0';
-
         setTimeout(() => {
           const updatedHistory = loadHistory();
           delete updatedHistory[entry.key];
           saveHistory(updatedHistory);
-          renderHistory();
+          const remaining = Object.keys(updatedHistory).length;
+          if (remaining === 0) {
+            renderHistory(); // empty state
+          } else {
+            tr.remove();
+            infoMessage.innerHTML = `Search history (${remaining}/${MAX_HISTORY}). <span title="Your ${MAX_HISTORY} most recent searches are saved; older searches are automatically removed.">ⓘ</span>`;
+          }
         }, 300);
       });
       delTd.appendChild(deleteButton);
