@@ -30,8 +30,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function appendDetailsMessage(message, summaryText) {
       const details = document.createElement('details');
       details.style.marginBottom = '0.5rem';
+      details.style.color = '#666';
+      details.style.fontStyle = 'italic';
 
       const summary = document.createElement('summary');
+      summary.style.cursor = 'pointer';
+      summary.style.color = '#666';
+      summary.style.fontStyle = 'italic';
       summary.textContent = summaryText;
       details.appendChild(summary);
 
@@ -57,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (notPlayed.length > 0) {
       appendDetailsMessage(
         `No matches found this season (including private matches) for: ${notPlayed.join(', ')}`,
-        `${notPlayed.length} player${notPlayed.length === 1 ? '' : 's'} with no seasonal matches`,
+        `${notPlayed.length} player${notPlayed.length === 1 ? '' : 's'} with no matches this season`,
       );
     }
 
