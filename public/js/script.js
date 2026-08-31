@@ -142,8 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
         history: entries,
         notFound: [],
       };
-
-      container.innerHTML = '';
     }
 
     // Batch-fetch latest vods for all players server-side to reduce client load

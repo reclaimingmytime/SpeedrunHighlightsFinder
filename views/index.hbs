@@ -7,14 +7,9 @@
           href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛏️</text></svg>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sakura.css@1.5.1/css/sakura.css"
           integrity="sha256-rFoyAIn+rtUKyWRsd6hDbzlnJmklIRroszMxG/mjxeY=" crossorigin="anonymous">
-    {{#if (eq view "dragonrace")}}
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css" integrity="sha256-LNw6Q1G7k9QbEjRIWjE5LjXyW4lE3qiqjdm+xSyPk/I=" crossorigin="anonymous">
-    {{/if}}
-    {{#if (eq view "players")}}
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css" integrity="sha256-LNw6Q1G7k9QbEjRIWjE5LjXyW4lE3qiqjdm+xSyPk/I=" crossorigin="anonymous">
-    {{/if}}
-    {{#if (eq view "history")}}
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css" integrity="sha256-LNw6Q1G7k9QbEjRIWjE5LjXyW4lE3qiqjdm+xSyPk/I=" crossorigin="anonymous">
+    {{#if (or (eq view "dragonrace") (eq view "players") (eq view "history"))}}
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css"
+              integrity="sha256-LNw6Q1G7k9QbEjRIWjE5LjXyW4lE3qiqjdm+xSyPk/I=" crossorigin="anonymous">
     {{/if}}
 
     <style>
@@ -83,7 +78,8 @@
     <form id="seasonOnlyForm" method="get" style="margin-bottom:0.5rem; display:inline-block;">
         <input type="hidden" name="view" value="latestFromHistory">
         <label for="season" style="display:inline">Season:</label>
-        <input type="number" id="season" name="season" min="9" placeholder="current" value="{{season}}" style="display:inline-block; width:79px; margin:0 8px;">
+        <input type="number" id="season" name="season" min="9" placeholder="current" value="{{season}}"
+               style="display:inline-block; width:79px; margin:0 8px;">
         <button type="submit" style="display:inline-block;">Set season</button>
     </form>
     <div id="latestFromHistoryStatus">
@@ -99,7 +95,7 @@
             {{#each vods}}
                 <p>
                     <a href="?user={{vodNickname}}" title="See all highlights by player">
-                        <img src="https://mineskin.eu/avatar/{{vodNickname}}/8.svg" class="avatar" alt="Player Avatar">
+                    <img src="https://mineskin.eu/avatar/{{vodNickname}}/8.svg" class="avatar" alt="Player Avatar">
                     </a>
                     <a href="{{vodLink}}" rel="noreferrer" target="_blank">{{vodNickname}} at {{vodTime}}</a>
                 </p>
@@ -110,7 +106,8 @@
             {{#if lastMatchId}}
                 <hr>
                 <p>
-                <a href="?{{#if user}}user={{user}}&amp;{{/if}}before={{lastMatchId}}{{#if season}}&amp;season={{season}}{{/if}}">Previous</a>
+                <a href="?{{#if user}}user={{user}}&amp;{{/if}}before={{lastMatchId}}{{#if season}}
+                    &amp;season={{season}}{{/if}}">Previous</a>
                     {{#if user}}{{#unless error}}|
                         <a href="#" id="toggleOpponentClips" data-value="{{#if includeOpponent}}false{{else}}true{{/if}}">
                             {{#if includeOpponent}}Hide opponent clips{{else}}Include opponent{{/if}}
@@ -144,8 +141,6 @@
             <tbody id="historyTableBody"></tbody>
         </table>
     </div>
-    <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable.min.js" crossorigin="anonymous"></script>
-
 {{/if}}
 
 {{#if (eq view "dragonrace")}}
@@ -166,7 +161,8 @@
                 <tr>
                     <td>
                         <a href="?user={{player}}">
-                            <img src="https://mineskin.eu/avatar/{{player}}/8.svg" class="avatar" style="padding-right: 4px" alt="Player Avatar">{{player}}
+                        <img src="https://mineskin.eu/avatar/{{player}}/8.svg" class="avatar" style="padding-right: 4px"
+                             alt="Player Avatar">{{player}}
                         </a>
                     </td>
 
@@ -190,7 +186,6 @@
     {{else}}
         <p>No cached dragon race conditions found.</p>
     {{/if}}
-    <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable.min.js" integrity="sha256-qIfPQq1baWczZMUpr+hQCzHfvj54wuYjvuZDD8abmQ8=" crossorigin="anonymous"></script>
 {{/if}}
 
 
@@ -208,34 +203,38 @@
             </tr>
             </thead>
             <tbody>
-             {{#each playersElo.players}}
-                 <tr>
-                     <td>
-                         <a href="?user={{player}}{{#if season}}&amp;season={{season}}{{/if}}">
-                             <img src="https://mineskin.eu/avatar/{{player}}/8.svg" class="avatar" style="padding-right: 4px" alt="Player Avatar">{{player}}
-                         </a>
-                     </td>
-                     <td data-sort="{{#if lastRecordedHighlight}}{{lastRecordedHighlight.eventUnix}}{{/if}}">
-                         {{#if lastRecordedHighlight}}
-                             <a href="{{lastRecordedHighlight.url}}" rel="noreferrer" target="_blank">{{lastRecordedHighlight.date}}</a>
-                         {{else}}
-                             —
-                         {{/if}}
-                     </td>
-                     <td data-sort="{{rankIndex}}">{{rankEmoji}} {{rankName}}</td>
-                     <td data-sort="{{#if elo}}{{elo}}{{/if}}">
-                         {{#if elo}}{{elo}}{{else}}—{{/if}}
-                     </td>
-                 </tr>
-             {{/each}}
+            {{#each playersElo.players}}
+                <tr>
+                    <td>
+                        <a href="?user={{player}}{{#if season}}&amp;season={{season}}{{/if}}">
+                        <img src="https://mineskin.eu/avatar/{{player}}/8.svg" class="avatar" style="padding-right: 4px"
+                             alt="Player Avatar">{{player}}
+                        </a>
+                    </td>
+                    <td data-sort="{{#if lastRecordedHighlight}}{{lastRecordedHighlight.eventUnix}}{{/if}}">
+                        {{#if lastRecordedHighlight}}
+                            <a href="{{lastRecordedHighlight.url}}" rel="noreferrer" target="_blank">{{lastRecordedHighlight.date}}</a>
+                        {{else}}
+                            —
+                        {{/if}}
+                    </td>
+                    <td data-sort="{{rankIndex}}">{{rankEmoji}} {{rankName}}</td>
+                    <td data-sort="{{#if elo}}{{elo}}{{/if}}">
+                        {{#if elo}}{{elo}}{{else}}—{{/if}}
+                    </td>
+                </tr>
+            {{/each}}
             </tbody>
         </table>
     {{else}}
         <p>No players found in cache.</p>
     {{/if}}
-    <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable.min.js" integrity="sha256-qIfPQq1baWczZMUpr+hQCzHfvj54wuYjvuZDD8abmQ8=" crossorigin="anonymous"></script>
 {{/if}}
 
+{{#if (or (eq view "dragonrace") (eq view "players") (eq view "history"))}}
+    <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable.min.js"
+            integrity="sha256-qIfPQq1baWczZMUpr+hQCzHfvj54wuYjvuZDD8abmQ8=" crossorigin="anonymous"></script>
+{{/if}}
 <script src="/js/script.js"></script>
 </body>
 </html>

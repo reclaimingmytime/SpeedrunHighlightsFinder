@@ -16,6 +16,11 @@ async function bootstrap() {
   hbs.registerHelper('eq', function (a, b) {
     return a === b;
   });
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+  hbs.registerHelper('or', function (...args) {
+    args.pop();
+    return args.some(Boolean);
+  });
 
   app.useGlobalFilters(new RenderExceptionFilter());
   app.use(cookieParser());
