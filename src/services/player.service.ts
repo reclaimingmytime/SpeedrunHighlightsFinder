@@ -24,10 +24,11 @@ export class PlayerService {
   }> {
     const matchIds = await getAllCachedMatchIds();
 
+    const matches = await Promise.all(matchIds.map((id) => this.matchService.getCachedMatch(id)));
+
     const playerEloMap = new Map<string, PlayerEloInfo>();
 
-    for (const id of matchIds) {
-      const match = await this.matchService.getCachedMatch(id);
+    for (const match of matches) {
       if (!match) continue;
       if (!Array.isArray(match.vod) || match.vod.length === 0) continue;
 
@@ -37,6 +38,7 @@ export class PlayerService {
 
       for (const player of match.players) {
         if (!player.nickname) continue;
+
         const name = player.nickname.trim();
         if (name.toLowerCase() === '[ranked bot]') continue;
 
@@ -44,21 +46,14 @@ export class PlayerService {
       }
     }
 
-    const results = this.buildResults(playerEloMap);
+    const results = this.buildPlayerEloResults(playerEloMap);
 
-    results.sort((a, b) => {
-      if (a.elo === null && b.elo === null) {
-        return a.player.localeCompare(b.player, undefined, { sensitivity: 'base' });
-      }
-      if (a.elo === null) return 1;
-      if (b.elo === null) return -1;
-      return b.elo - a.elo;
-    });
+    this.sortPlayerEloResults(results);
 
     return { players: results };
   }
 
-  private buildResults(playerEloMap: Map<string, PlayerEloInfo>): Array<{
+  private buildPlayerEloResults(playerEloMap: Map<string, PlayerEloInfo>): Array<{
     player: string;
     elo: number | null;
     rankName: string;
@@ -70,8 +65,12 @@ export class PlayerService {
     return Array.from(playerEloMap.entries())
       .filter(([, info]) => info.lastRecordedHighlight != null)
       .map(([player, info]) => {
-        const infoWithHighlight = info as PlayerEloInfo & { lastRecordedHighlight: PlayerLastRecordedHighlight };
+        const infoWithHighlight = info as PlayerEloInfo & {
+          lastRecordedHighlight: PlayerLastRecordedHighlight;
+        };
+
         const { rankName, rankIndex, rankEmoji } = getRankFromElo(infoWithHighlight.elo);
+
         return {
           player,
           elo: infoWithHighlight.elo,
@@ -84,6 +83,31 @@ export class PlayerService {
       });
   }
 
+  private sortPlayerEloResults(
+    results: Array<{
+      player: string;
+      elo: number | null;
+      rankName: string;
+      rankIndex: number;
+      rankEmoji?: string;
+      season: number;
+      lastRecordedHighlight: PlayerLastRecordedHighlight;
+    }>,
+  ): void {
+    results.sort((a, b) => {
+      if (a.elo === null && b.elo === null) {
+        return a.player.localeCompare(b.player, undefined, {
+          sensitivity: 'base',
+        });
+      }
+
+      if (a.elo === null) return 1;
+      if (b.elo === null) return -1;
+
+      return b.elo - a.elo;
+    });
+  }
+
   private updatePlayerFromMatch(
     playerEloMap: Map<string, PlayerEloInfo>,
     player: MatchData['players'][number],
@@ -93,7 +117,9 @@ export class PlayerService {
     season: number,
   ): void {
     const name = player.nickname.trim();
-    let entry = playerEloMap.get(name);
+    const key = name.toLowerCase();
+
+    let entry = playerEloMap.get(key);
 
     if (typeof player.eloRate === 'number') {
       if (!entry || entry.seenAt < seenAt) {
@@ -104,7 +130,8 @@ export class PlayerService {
           season,
           lastRecordedHighlight: entry?.lastRecordedHighlight,
         };
-        playerEloMap.set(name, entry);
+
+        playerEloMap.set(key, entry);
       }
     } else if (!entry) {
       entry = {
@@ -114,7 +141,8 @@ export class PlayerService {
         season,
         lastRecordedHighlight: undefined,
       };
-      playerEloMap.set(name, entry);
+
+      playerEloMap.set(key, entry);
     }
 
     if (matchId > entry.latestMatchId) {
@@ -122,31 +150,39 @@ export class PlayerService {
       entry.season = season > 0 ? season : entry.season;
     }
 
+    const highlight = this.getLatestPlayerHighlight(match, player);
+
+    if (highlight && (!entry.lastRecordedHighlight || highlight.eventUnix > entry.lastRecordedHighlight.eventUnix)) {
+      entry.lastRecordedHighlight = highlight;
+      entry.latestMatchId = matchId;
+      entry.season = season > 0 ? season : entry.season;
+    }
+  }
+
+  private getLatestPlayerHighlight(
+    match: MatchData,
+    player: MatchData['players'][number],
+  ): PlayerLastRecordedHighlight | undefined {
     const vod = Array.isArray(match.vod) ? match.vod.find((v) => v.uuid === player.uuid) : undefined;
-    if (!vod) return;
+
+    if (!vod) return undefined;
 
     const deathTimelines = Array.isArray(match.timelines)
       ? match.timelines.filter((t) => t.type === 'projectelo.timeline.death' && t.uuid === player.uuid)
       : [];
 
-    if (deathTimelines.length === 0) return;
+    if (deathTimelines.length === 0) return undefined;
 
     const latestDeathEvent = [...deathTimelines].sort((a, b) => b.time - a.time)[0];
 
     const { vodTimestamp, date, eventUnix } = getVodEventTime(match, latestDeathEvent.time, vod.startsAt);
 
-    const candidate: PlayerLastRecordedHighlight = {
+    return {
       date,
       eventUnix,
       url: `${vod.url}?t=${Math.max(0, vodTimestamp - 6)}s`,
-      matchId,
+      matchId: typeof match.id === 'number' ? match.id : 0,
     };
-
-    if (!entry.lastRecordedHighlight || eventUnix > entry.lastRecordedHighlight.eventUnix) {
-      entry.lastRecordedHighlight = candidate;
-      entry.latestMatchId = matchId;
-      entry.season = season > 0 ? season : entry.season;
-    }
   }
 
   async getLastPublicMatchesForPlayers(playersInput?: string): Promise<{ results: Record<string, string | null> }> {
@@ -158,20 +194,26 @@ export class PlayerService {
 
     const matchIds = await getAllCachedMatchIds();
 
-    const results: Record<string, string | null> = {};
-    for (const player of players) results[player] = null;
+    const matches = await Promise.all(matchIds.map((id) => this.matchService.getCachedMatch(id)));
 
-    for (const id of matchIds) {
-      const match = await this.matchService.getCachedMatch(id);
+    const results: Record<string, string | null> = {};
+
+    for (const player of players) {
+      results[player] = null;
+    }
+
+    for (const match of matches) {
       if (!match) continue;
       if (!Array.isArray(match.vod) || match.vod.length === 0) continue;
 
       for (const player of players) {
         const found = match.players.some((matchPlayer) => matchPlayer.nickname.toLowerCase() === player.toLowerCase());
+
         if (!found) continue;
 
         const existing = results[player];
         const matchIso = new Date(match.date * 1000).toISOString();
+
         if (!existing || matchIso > existing) {
           results[player] = matchIso;
         }
