@@ -202,6 +202,7 @@
             <thead>
             <tr style="position: sticky;top: 0;background-color: #f9f9f9;">
                 <th>Player</th>
+                <th>Last recorded highlight</th>
                 <th>Rank</th>
                 <th aria-sort="descending">Elo</th>
             </tr>
@@ -210,9 +211,16 @@
              {{#each playersElo.players}}
                  <tr>
                      <td>
-                         <a href="?user={{player}}">
+                         <a href="?user={{player}}{{#if season}}&amp;season={{season}}{{/if}}">
                              <img src="https://mineskin.eu/avatar/{{player}}/8.svg" class="avatar" style="padding-right: 4px" alt="Player Avatar">{{player}}
                          </a>
+                     </td>
+                     <td data-sort="{{#if lastRecordedHighlight}}{{lastRecordedHighlight.eventUnix}}{{/if}}">
+                         {{#if lastRecordedHighlight}}
+                             <a href="{{lastRecordedHighlight.url}}" rel="noreferrer" target="_blank">{{lastRecordedHighlight.date}}</a>
+                         {{else}}
+                             —
+                         {{/if}}
                      </td>
                      <td data-sort="{{rankIndex}}">{{rankEmoji}} {{rankName}}</td>
                      <td data-sort="{{#if elo}}{{elo}}{{/if}}">

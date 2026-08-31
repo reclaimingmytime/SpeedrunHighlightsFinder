@@ -13,6 +13,7 @@ export type MatchData = {
   }[];
   result: { uuid: string; time: number };
   forfeited: boolean;
+  season: number;
 };
 export type DeathEvent = { vodNickname: string; vodTime: string; vodLink: string; eventUnix: number };
 export type DragonRaceCondition = {
@@ -32,4 +33,19 @@ export type ErrorPayload = {
   error?: string;
   query?: Record<string, string[]>;
   params?: Record<string, string[]>;
+};
+
+export type PlayerLastRecordedHighlight = {
+  date: string;
+  eventUnix: number;
+  url: string;
+  matchId?: number;
+};
+
+export type PlayerEloInfo = {
+  elo: number | null;
+  seenAt: number;
+  latestMatchId: number;
+  season: number;
+  lastRecordedHighlight?: PlayerLastRecordedHighlight;
 };
