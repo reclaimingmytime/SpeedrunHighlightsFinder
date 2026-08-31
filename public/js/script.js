@@ -1,7 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
   const clearButton = document.getElementById('clearHistory');
 
+  // -----------------------------
   // --- Toggle opponent clips ---
+  // -----------------------------
   const toggle = document.getElementById('toggleOpponentClips');
   if (toggle) {
     toggle.addEventListener('click', (e) => {
@@ -12,7 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- Helpers for fetching latest matches from search history ---
+  // ---------------------------
+  // --- Helpers for history ---
+  // ---------------------------
 
   let state = null;
 
@@ -23,22 +27,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     container.innerHTML = '';
 
-    // Display users that do not exist
-    if (notFound.length > 0) {
+    function appendDetailsMessage(message, summaryText) {
+      const details = document.createElement('details');
+      details.style.marginBottom = '0.5rem';
+
+      const summary = document.createElement('summary');
+      summary.textContent = summaryText;
+      details.appendChild(summary);
+
       const infoP = document.createElement('p');
       infoP.style.color = '#666';
       infoP.style.fontStyle = 'italic';
-      infoP.textContent = `Note: ${notFound.length} user${notFound.length === 1 ? '' : 's'} not found: ${notFound.join(', ')}`;
-      container.appendChild(infoP);
+      infoP.style.marginTop = '0.5rem';
+      infoP.textContent = message;
+      details.appendChild(infoP);
+
+      container.appendChild(details);
+    }
+
+    // Display users that do not exist
+    if (notFound.length > 0) {
+      appendDetailsMessage(
+        `Note: ${notFound.length} user${notFound.length === 1 ? '' : 's'} not found: ${notFound.join(', ')}`,
+        `${notFound.length} invalid user${notFound.length === 1 ? '' : 's'}`,
+      );
     }
 
     // Display users that exist but have no streams this season
     if (notPlayed.length > 0) {
-      const infoP = document.createElement('p');
-      infoP.style.color = '#666';
-      infoP.style.fontStyle = 'italic';
-      infoP.textContent = `No matches found this season (including private matches) for: ${notPlayed.join(', ')}`;
-      container.appendChild(infoP);
+      appendDetailsMessage(
+        `No matches found this season (including private matches) for: ${notPlayed.join(', ')}`,
+        `${notPlayed.length} player${notPlayed.length === 1 ? '' : 's'} with no seasonal matches`,
+      );
     }
 
     if (error) {
