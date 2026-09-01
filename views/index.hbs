@@ -1,240 +1,334 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon"
-          href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛏️</text></svg>">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sakura.css@1.5.1/css/sakura.css"
-          integrity="sha256-rFoyAIn+rtUKyWRsd6hDbzlnJmklIRroszMxG/mjxeY=" crossorigin="anonymous">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛏️</text></svg>"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/sakura.css@1.5.1/css/sakura.css"
+      integrity="sha256-rFoyAIn+rtUKyWRsd6hDbzlnJmklIRroszMxG/mjxeY="
+      crossorigin="anonymous"
+    />
     {{#if (or (eq view "dragonrace") (eq view "players") (eq view "history"))}}
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css"
-              integrity="sha256-LNw6Q1G7k9QbEjRIWjE5LjXyW4lE3qiqjdm+xSyPk/I=" crossorigin="anonymous">
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css"
+        integrity="sha256-LNw6Q1G7k9QbEjRIWjE5LjXyW4lE3qiqjdm+xSyPk/I="
+        crossorigin="anonymous"
+      />
     {{/if}}
 
     <style>
-        a:visited {
-            color: #982c61;
-        }
+      a:visited {
+        color: #982c61;
+      }
 
-        p {
-            margin-bottom: 16px;
-        }
+      p {
+        margin-bottom: 16px;
+      }
 
-        .avatar {
-            height: 18px;
-            display: inline;
-            margin-bottom: 0;
-        }
+      .avatar {
+        height: 18px;
+        display: inline;
+        margin-bottom: 0;
+      }
 
-        /* nav link states */
-        a.nav-inactive {
-            color: #999;
-            pointer-events: none;
-            text-decoration: none;
-            cursor: default;
-        }
+      /* nav link states */
+      a.nav-inactive {
+        color: #999;
+        pointer-events: none;
+        text-decoration: none;
+        cursor: default;
+      }
     </style>
-    <title>{{#if user}}{{user}} - {{/if}}MCSR Ranked Highlights</title>
-</head>
-<body>
-<h1>MCSR Ranked Highlights</h1>
+    <title>
+      {{#if user}}
+        {{ user }} -
+      {{/if}}
+      MCSR Ranked Highlights
+    </title>
+  </head>
+  <body>
+    <h1>MCSR Ranked Highlights</h1>
 
-<div style="margin-bottom: 0.75rem;">
-    <a href="/" class="{{#if (eq view "latest")}}nav-inactive{{/if}}">
+    <div style="margin-bottom: 0.75rem;">
+      <a
+        class='
+          {{#if (eq view "latest")}}
+            nav-inactive
+          {{/if}}
+        '
+        href="/"
+      >
         Highlights
-    </a>
-    |
-    <a href="/?view=latestFromHistory" class="{{#if (eq view "latestFromHistory")}}nav-inactive{{/if}}">
+      </a>
+      |
+      <a
+        class='
+          {{#if (eq view "latestFromHistory")}}
+            nav-inactive
+          {{/if}}
+        '
+        href="/?view=latestFromHistory"
+      >
         Latest from History
-    </a>
-    |
-    <a href="/?view=history" class="{{#if (eq view "history")}}nav-inactive{{/if}}">
+      </a>
+      |
+      <a
+        class='
+          {{#if (eq view "history")}}
+            nav-inactive
+          {{/if}}
+        '
+        href="/?view=history"
+      >
         History
-    </a>
-    |
-    <a href="/?view=dragonrace" class="{{#if (eq view "dragonrace")}}nav-inactive{{/if}}">
+      </a>
+      |
+      <a
+        class='
+          {{#if (eq view "dragonrace")}}
+            nav-inactive
+          {{/if}}
+        '
+        href="/?view=dragonrace"
+      >
         Dragon Race
-    </a>
-    |
-    <a href="/?view=players" class="{{#if (eq view "players")}}nav-inactive{{/if}}">
+      </a>
+      |
+      <a
+        class='
+          {{#if (eq view "players")}}
+            nav-inactive
+          {{/if}}
+        '
+        href="/?view=players"
+      >
         Players
-    </a>
-</div>
-
-{{#if (eq view "latest")}}
-    <form id="searchForm">
-        <label for="user" style="display: inline">Player:</label>
-        <input type="search" id="user" name="user" placeholder="All players" value="{{user}}">
-        <label for="season" style="display: inline">Season:</label>
-        <input type="number" id="season" name="season" min="9" placeholder="current" value="{{season}}"
-               style="display: inline-block; width: 79px">
-        <button type="submit">Submit</button>
-    </form>
-{{/if}}
-
-
-{{#if (eq view "latestFromHistory")}}
-    <form id="seasonOnlyForm" method="get" style="margin-bottom:0.5rem; display:inline-block;">
-        <input type="hidden" name="view" value="latestFromHistory">
-        <label for="season" style="display:inline">Season:</label>
-        <input type="number" id="season" name="season" min="9" placeholder="current" value="{{season}}"
-               style="display:inline-block; width:79px; margin:0 8px;">
-        <button type="submit" style="display:inline-block;">Set season</button>
-    </form>
-    <div id="latestFromHistoryStatus">
-        Loading latest matches...
+      </a>
     </div>
-{{/if}}
 
-<div id="latestMatchesContainer">
-    {{#if error}}
-        <p id="error" style="color: red;">{{error}}</p>
-    {{else}}
-        {{#if (eq view "latest")}}
-            {{#each vods}}
-                <p>
-                    <a href="?user={{vodNickname}}" title="See all highlights by player">
-                    <img src="https://mineskin.eu/avatar/{{vodNickname}}/8.svg" class="avatar" alt="Player Avatar">
-                    </a>
-                    <a href="{{vodLink}}" rel="noreferrer" target="_blank">{{vodNickname}} at {{vodTime}}</a>
-                </p>
-            {{else}}
-                <p>No highlights found.</p>
-            {{/each}}
-
-            {{#if lastMatchId}}
-                <hr>
-                <p>
-                <a href="?{{#if user}}user={{user}}&amp;{{/if}}before={{lastMatchId}}{{#if season}}
-                    &amp;season={{season}}{{/if}}">Previous</a>
-                    {{#if user}}{{#unless error}}|
-                        <a href="#" id="toggleOpponentClips" data-value="{{#if includeOpponent}}false{{else}}true{{/if}}">
-                            {{#if includeOpponent}}Hide opponent clips{{else}}Include opponent{{/if}}
-                        </a>
-                    {{/unless}}{{/if}}
-                </p>
-            {{/if}}
-        {{/if}}
+    {{#if (eq view "latest")}}
+      <form id="searchForm">
+        <label for="user" style="display: inline">Player:</label>
+        <input id="user" type="search" name="user" placeholder="All players" value="{{ user }}" />
+        <label for="season" style="display: inline">Season:</label>
+        <input
+          id="season"
+          type="number"
+          name="season"
+          min="9"
+          placeholder="current"
+          value="{{ season }}"
+          style="display: inline-block; width: 79px"
+        />
+        <button type="submit">Submit</button>
+      </form>
     {{/if}}
-</div>
 
+    {{#if (eq view "latestFromHistory")}}
+      <form id="seasonOnlyForm" method="get" style="margin-bottom:0.5rem; display:inline-block;">
+        <input type="hidden" name="view" value="latestFromHistory" />
+        <label for="season" style="display:inline">Season:</label>
+        <input
+          id="season"
+          type="number"
+          name="season"
+          min="9"
+          placeholder="current"
+          value="{{ season }}"
+          style="display:inline-block; width:79px; margin:0 8px;"
+        />
+        <button type="submit" style="display:inline-block;">Set season</button>
+      </form>
+      <div id="latestFromHistoryStatus">Loading latest matches...</div>
+    {{/if}}
 
-{{#if (eq view "history")}}
-    <div id="searchHistoryPanel" style="margin-top: 1rem;">
+    <div id="latestMatchesContainer">
+      {{#if error}}
+        <p id="error" style="color: red;">
+          {{ error }}
+        </p>
+      {{else}}
+        {{#if (eq view "latest")}}
+          {{#each vods}}
+            <p>
+              <a href="?user={{ vodNickname }}" title="See all highlights by player">
+                <img class="avatar" src="https://mineskin.eu/avatar/{{ vodNickname }}/8.svg" alt="Player Avatar" />
+              </a>
+              <a href="{{ vodLink }}" rel="noreferrer" target="_blank">{{ vodNickname }} at {{ vodTime }}</a>
+            </p>
+          {{else}}
+            <p>No highlights found.</p>
+          {{/each}}
+
+          {{#if lastMatchId}}
+            <hr />
+            <p>
+              <a
+                href="?{{#if user}}user={{ user }}&amp;{{/if}}before={{ lastMatchId }}{{#if season}}&amp;season={{ season }}{{/if}}"
+              >
+                Previous
+              </a>
+              {{#if user}}
+                {{#unless error}}
+                  |
+                  <a
+                    id="toggleOpponentClips"
+                    href="#"
+                    data-value="{{#if includeOpponent}}false{{else}}true{{/if}}"
+                  >
+                    {{#if includeOpponent}}
+                      Hide opponent clips
+                    {{else}}
+                      Include opponent
+                    {{/if}}
+                  </a>
+                {{/unless}}
+              {{/if}}
+            </p>
+          {{/if}}
+        {{/if}}
+      {{/if}}
+    </div>
+
+    {{#if (eq view "history")}}
+      <div id="searchHistoryPanel" style="margin-top: 1rem;">
         <p id="historyInfoMessage" style="display:none;"></p>
 
         <p>
-            <button id="recalcLastPublicMatches" type="button" style="display: none;">Calculate latest matches</button>
-            <button id="clearHistory" type="button" style="display: none; margin-left: 8px;">Clear history</button>
+          <button id="recalcLastPublicMatches" type="button" style="display: none;">Calculate latest matches</button>
+          <button id="clearHistory" type="button" style="display: none; margin-left: 8px;">Clear history</button>
         </p>
-        <table class="sortable" id="historyTable" style="width:100%; border-collapse: collapse; display: none;">
-            <thead>
+        <table id="historyTable" class="sortable" style="width:100%; border-collapse: collapse; display: none;">
+          <thead>
             <tr style="position: sticky; top: 0; background-color: #f9f9f9;">
-                <th>Player</th>
-                <th>Visits</th>
-                <th aria-sort="descending">Last accessed</th>
-                <th class="no-sort" id="lastMatch">Latest match</th>
-                <th class="no-sort">Delete</th>
+              <th>Player</th>
+              <th>Visits</th>
+              <th aria-sort="descending">Last accessed</th>
+              <th id="lastMatch" class="no-sort">Latest match</th>
+              <th class="no-sort">Delete</th>
             </tr>
-            </thead>
-            <tbody id="historyTableBody"></tbody>
+          </thead>
+          <tbody id="historyTableBody"></tbody>
         </table>
-    </div>
-{{/if}}
+      </div>
+    {{/if}}
 
-{{#if (eq view "dragonrace")}}
-    <p>All dragon perch races where both players killed the dragon in previously accessed matches.</p>
+    {{#if (eq view "dragonrace")}}
+      <p>All dragon perch races where both players killed the dragon in previously accessed matches.</p>
 
-    {{#if dragonRaceConditions.length}}
+      {{#if dragonRaceConditions.length}}
         <table class="sortable">
-            <thead>
+          <thead>
             <tr style="position: sticky;top: 0;background-color: #f9f9f9;">
-                <th>Player</th>
-                <th>Difference (secs)</th>
-                <th aria-sort="descending">Date & Time</th>
-                <th class="no-sort">VOD</th>
+              <th>Player</th>
+              <th>Difference (secs)</th>
+              <th aria-sort="descending">Date & Time</th>
+              <th class="no-sort">VOD</th>
             </tr>
-            </thead>
-            <tbody>
+          </thead>
+          <tbody>
             {{#each dragonRaceConditions}}
-                <tr>
-                    <td>
-                        <a href="?user={{player}}">
-                        <img src="https://mineskin.eu/avatar/{{player}}/8.svg" class="avatar" style="padding-right: 4px"
-                             alt="Player Avatar">{{player}}
-                        </a>
-                    </td>
+              <tr>
+                <td>
+                  <a href="?user={{ player }}">
+                    <img
+                      class="avatar"
+                      src="https://mineskin.eu/avatar/{{ player }}/8.svg"
+                      style="padding-right: 4px"
+                      alt="Player Avatar"
+                    />
+                    {{ player }}
+                  </a>
+                </td>
 
-                    <td>
-                        {{timeDifferenceSeconds}}
-                    </td>
+                <td>{{ timeDifferenceSeconds }}</td>
 
-                    <td data-sort="{{eventUnix}}">
-                        {{date}}
-                    </td>
+                <td data-sort="{{ eventUnix }}">{{ date }}</td>
 
-                    <td>
-                        <a href="{{vodLink}}" rel="noreferrer" target="_blank">
-                            Watch
-                        </a>
-                    </td>
-                </tr>
+                <td>
+                  <a href="{{ vodLink }}" rel="noreferrer" target="_blank">Watch</a>
+                </td>
+              </tr>
             {{/each}}
-            </tbody>
+          </tbody>
         </table>
-    {{else}}
+      {{else}}
         <p>No cached dragon race conditions found.</p>
+      {{/if}}
     {{/if}}
-{{/if}}
 
+    {{#if (eq view "players")}}
+      <p>All players with a VOD link in the cache and their cached elo.</p>
 
-{{#if (eq view "players")}}
-    <p>All players with a VOD link in the cache and their cached elo.</p>
-
-    {{#if playersElo.players.length}}
+      {{#if playersElo.players.length}}
         <table class="sortable">
-            <thead>
+          <thead>
             <tr style="position: sticky;top: 0;background-color: #f9f9f9;">
-                <th>Player</th>
-                <th>Last recorded highlight</th>
-                <th>Rank</th>
-                <th aria-sort="descending">Elo</th>
+              <th>Player</th>
+              <th>Last recorded highlight</th>
+              <th>Rank</th>
+              <th aria-sort="descending">Elo</th>
             </tr>
-            </thead>
-            <tbody>
+          </thead>
+          <tbody>
             {{#each playersElo.players}}
-                <tr>
-                    <td>
-                        <a href="?user={{player}}{{#if season}}&amp;season={{season}}{{/if}}">
-                        <img src="https://mineskin.eu/avatar/{{player}}/8.svg" class="avatar" style="padding-right: 4px"
-                             alt="Player Avatar">{{player}}
-                        </a>
-                    </td>
-                    <td data-sort="{{#if lastRecordedHighlight}}{{lastRecordedHighlight.eventUnix}}{{/if}}">
-                        {{#if lastRecordedHighlight}}
-                            <a href="{{lastRecordedHighlight.url}}" rel="noreferrer" target="_blank">{{lastRecordedHighlight.date}}</a>
-                        {{else}}
-                            —
-                        {{/if}}
-                    </td>
-                    <td data-sort="{{rankIndex}}">{{rankEmoji}} {{rankName}}</td>
-                    <td data-sort="{{#if elo}}{{elo}}{{/if}}">
-                        {{#if elo}}{{elo}}{{else}}—{{/if}}
-                    </td>
-                </tr>
+              <tr>
+                <td>
+                  <a
+                    href="?user={{ player }}{{#if season}}&amp;season={{ season }}{{/if}}"
+                  >
+                    <img
+                      class="avatar"
+                      src="https://mineskin.eu/avatar/{{ player }}/8.svg"
+                      style="padding-right: 4px"
+                      alt="Player Avatar"
+                    />
+                    {{ player }}
+                  </a>
+                </td>
+                <td
+                  data-sort="{{#if lastRecordedHighlight}}{{ lastRecordedHighlight.eventUnix }}{{/if}}"
+                >
+                  {{#if lastRecordedHighlight}}
+                    <a href="{{ lastRecordedHighlight.url }}" rel="noreferrer" target="_blank">
+                      {{ lastRecordedHighlight.date }}
+                    </a>
+                  {{else}}
+                    —
+                  {{/if}}
+                </td>
+                <td data-sort="{{ rankIndex }}">{{ rankEmoji }} {{ rankName }}</td>
+                <td
+                  data-sort="{{#if elo}}{{ elo }}{{/if}}"
+                >
+                  {{#if elo}}
+                    {{ elo }}
+                  {{else}}
+                    —
+                  {{/if}}
+                </td>
+              </tr>
             {{/each}}
-            </tbody>
+          </tbody>
         </table>
-    {{else}}
+      {{else}}
         <p>No players found in cache.</p>
+      {{/if}}
     {{/if}}
-{{/if}}
 
-{{#if (or (eq view "dragonrace") (eq view "players") (eq view "history"))}}
-    <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable.min.js"
-            integrity="sha256-qIfPQq1baWczZMUpr+hQCzHfvj54wuYjvuZDD8abmQ8=" crossorigin="anonymous"></script>
-{{/if}}
-<script src="/js/script.js"></script>
-</body>
+    {{#if (or (eq view "dragonrace") (eq view "players") (eq view "history"))}}
+      <script
+        src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable.min.js"
+        integrity="sha256-qIfPQq1baWczZMUpr+hQCzHfvj54wuYjvuZDD8abmQ8="
+        crossorigin="anonymous"
+      ></script>
+    {{/if}}
+    <script src="/js/script.js"></script>
+  </body>
 </html>

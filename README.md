@@ -20,3 +20,8 @@ $ npm run start:dev
 # production mode
 $ npm run start:prod
 ```
+
+## Setup WebStorm
+Enable automatic Prettier integration (_Settings --> Languages & Frameworks --> JavaScript --> Prettier --> Automatic Prettier configuration_):
+- Select "run on save"
+- Add "hbs" to the list of recognized file types
