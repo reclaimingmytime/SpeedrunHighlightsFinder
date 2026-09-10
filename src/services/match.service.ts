@@ -39,9 +39,9 @@ export class MatchService {
     before?: number,
     season?: number,
   ): Promise<{ lastMatchId: number | undefined; matchIds: number[] }> {
-    const matchesResponse = await makeApiRequest(
-      `${user ? `users/${user}/matches` : 'matches'}?count=${user ? API_MAX_RESULTS_USER_PAGE : API_MAX_RESULTS}${before ? `&before=${before}` : ''}&excludeDecayed=true${season ? `&season=${season}` : ''}`,
-    );
+    const requestPath = `${user ? `users/${user}/matches` : 'matches'}?count=${user ? API_MAX_RESULTS_USER_PAGE : API_MAX_RESULTS}${before ? `&before=${before}` : ''}&excludeDecayed=true${season ? `&season=${season}` : ''}`;
+    const matchesResponse = await makeApiRequest(requestPath);
+
     validateMatchIdResponse(matchesResponse);
 
     const lastMatchId = matchesResponse[matchesResponse.length - 1]?.id;

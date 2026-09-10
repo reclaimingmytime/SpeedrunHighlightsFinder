@@ -91,7 +91,7 @@ export class VodService {
   }
 
   private getDeathVodsFromMatch(match: MatchData, validatedUser?: string, includeOpponent?: boolean): DeathEvent[] {
-    if (match.vod.length === 0 || match.forfeited) {
+    if (!Array.isArray(match.vod) || match.vod.length === 0) {
       return [];
     }
 
