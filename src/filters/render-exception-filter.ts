@@ -14,7 +14,6 @@ export class RenderExceptionFilter implements ExceptionFilter {
         vods: [],
         season: req.query?.season,
         lastMatchId: undefined,
-        isLatest: true,
         error,
       });
 
