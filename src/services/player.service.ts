@@ -116,24 +116,11 @@ export class PlayerService {
     matchId: number,
     season: number,
   ): void {
-    const name = player.nickname.trim();
-    const key = name.toLowerCase();
+    const key = player.nickname.trim().toLowerCase();
 
     let entry = playerEloMap.get(key);
 
-    if (typeof player.eloRate === 'number') {
-      if (!entry || entry.seenAt < seenAt) {
-        entry = {
-          elo: player.eloRate,
-          seenAt,
-          latestMatchId: matchId,
-          season,
-          lastRecordedHighlight: entry?.lastRecordedHighlight,
-        };
-
-        playerEloMap.set(key, entry);
-      }
-    } else if (!entry) {
+    if (!entry) {
       entry = {
         elo: null,
         seenAt: 0,
@@ -145,9 +132,14 @@ export class PlayerService {
       playerEloMap.set(key, entry);
     }
 
+    if (typeof player.eloRate === 'number' && seenAt > entry.seenAt) {
+      entry.elo = player.eloRate;
+      entry.seenAt = seenAt;
+    }
+
     if (matchId > entry.latestMatchId) {
       entry.latestMatchId = matchId;
-      entry.season = season > 0 ? season : entry.season;
+      if (season > 0) entry.season = season;
     }
 
     const highlight = this.getLatestPlayerHighlight(match, player);
@@ -155,7 +147,7 @@ export class PlayerService {
     if (highlight && (!entry.lastRecordedHighlight || highlight.eventUnix > entry.lastRecordedHighlight.eventUnix)) {
       entry.lastRecordedHighlight = highlight;
       entry.latestMatchId = matchId;
-      entry.season = season > 0 ? season : entry.season;
+      if (season > 0) entry.season = season;
     }
   }
 
