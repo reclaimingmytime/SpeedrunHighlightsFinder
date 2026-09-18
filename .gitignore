@@ -1,6 +1,7 @@
 # Custom
 cache/
 tsconfig.build.tsbuildinfo
+tsconfig.tsbuildinfo
 
 # NestJS Default
 # compiled output
