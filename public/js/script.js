@@ -18,169 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Helpers for history ---
   // ---------------------------
 
-  let state = null;
-
-  function renderLatestMatches(vods, notFound = [], notPlayed = [], error) {
-    const container = document.getElementById('latestMatchesContainer');
-    const statusDiv = document.getElementById('latestFromHistoryStatus');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    function appendDetailsMessage(message, summaryText) {
-      const details = document.createElement('details');
-      details.style.marginBottom = '0.5rem';
-      details.style.color = '#666';
-      details.style.fontStyle = 'italic';
-
-      const summary = document.createElement('summary');
-      summary.style.cursor = 'pointer';
-      summary.style.color = '#666';
-      summary.style.fontStyle = 'italic';
-      summary.textContent = summaryText;
-      details.appendChild(summary);
-
-      const infoP = document.createElement('p');
-      infoP.style.color = '#666';
-      infoP.style.fontStyle = 'italic';
-      infoP.style.marginTop = '0.5rem';
-      infoP.textContent = message;
-      details.appendChild(infoP);
-
-      container.appendChild(details);
-    }
-
-    // Display users that do not exist
-    if (notFound.length > 0) {
-      appendDetailsMessage(
-        `Note: ${notFound.length} user${notFound.length === 1 ? '' : 's'} not found: ${notFound.join(', ')}`,
-        `${notFound.length} invalid user${notFound.length === 1 ? '' : 's'}`,
-      );
-    }
-
-    // Display users that exist but have no streams this season
-    if (notPlayed.length > 0) {
-      appendDetailsMessage(
-        `No matches found this season (including private matches) for: ${notPlayed.join(', ')}`,
-        `${notPlayed.length} player${notPlayed.length === 1 ? '' : 's'} with no matches this season`,
-      );
-    }
-
-    if (error) {
-      const errorP = document.createElement('p');
-      errorP.style.color = 'red';
-      errorP.textContent = error;
-      container.appendChild(errorP);
-      if (statusDiv) statusDiv.innerHTML = '';
-      return;
-    }
-
-    if (!vods || vods.length === 0) {
-      const p = document.createElement('p');
-      p.textContent = 'No highlights found.';
-      container.appendChild(p);
-      if (statusDiv) statusDiv.innerHTML = '';
-      return;
-    }
-
-    for (const vod of vods) {
-      const p = document.createElement('p');
-      const avatarAnchor = document.createElement('a');
-      avatarAnchor.href = buildUrl(vod.vodNickname);
-      avatarAnchor.style.paddingRight = '4px';
-      avatarAnchor.title = 'See all highlights by player';
-
-      const img = document.createElement('img');
-      img.src = 'https://mineskin.eu/avatar/' + encodeURIComponent(vod.vodNickname) + '/8.svg';
-      img.alt = 'Player Avatar';
-      img.className = 'avatar';
-
-      avatarAnchor.appendChild(img);
-
-      const link = document.createElement('a');
-      link.href = vod.vodLink;
-      link.rel = 'noreferrer';
-      link.target = '_blank';
-      link.textContent = `${vod.vodNickname} at ${vod.vodTime}`;
-
-      p.appendChild(avatarAnchor);
-      p.appendChild(link);
-
-      container.appendChild(p);
-    }
-
-    // Remove loading text
-    if (statusDiv) {
-      statusDiv.innerHTML = '';
-    }
-  }
-
-  async function fetchLatestFromHistory(loadMore = false) {
-    const container = document.getElementById('latestMatchesContainer');
-    if (!container) return;
-
-    // Initialize state on first call
-    if (!loadMore || !state) {
-      const history = loadHistory();
-      const entries = Object.entries(history).map(([key, value]) => ({ key, ...value }));
-
-      if (entries.length === 0) {
-        renderLatestMatches([], []);
-        return;
-      }
-
-      // season from input if present
-      let season;
-      const seasonInput = document.getElementById('season');
-      if (seasonInput && seasonInput.value && seasonInput.value.trim() !== '') {
-        season = Number(seasonInput.value);
-      }
-
-      state = {
-        allVods: [],
-        season: season,
-        history: entries,
-        notFound: [],
-      };
-    }
-
-    // Batch-fetch latest vods for all players server-side to reduce client load
-    const players = state.history.map((e) => e.user).filter(Boolean);
-    if (players.length === 0) {
-      renderLatestMatches([], [], []);
-      return;
-    }
-
-    try {
-      const params = new URLSearchParams();
-      // Send players as a single comma-separated string
-      params.set('players', players.join(','));
-      if (state.season !== undefined) params.set('season', String(state.season));
-
-      const res = await fetch('/api/latest?' + params.toString());
-      if (!res.ok) {
-        renderLatestMatches([], [], [], 'Could not fetch latest matches. An unexpected error occurred.');
-        return;
-      }
-      const json = await res.json();
-      state.allVods = json.vods || [];
-      state.notFound = json.notFound || [];
-      state.notPlayed = json.notPlayed || [];
-    } catch (err) {
-      renderLatestMatches([], [], [], 'An internal error occurred. Check the browser console for more info.');
-      console.error(err);
-      return;
-    }
-
-    if (state.allVods.length === 0) {
-      renderLatestMatches([], state.notFound, state.notPlayed);
-      return;
-    }
-
-    renderLatestMatches(state.allVods, state.notFound, state.notPlayed);
-  }
-
-  // --- Search history (client-side using localStorage) ---
   const STORAGE_KEY = 'mcsr_search_history';
   const MAX_HISTORY = 100;
 
@@ -215,6 +52,12 @@ document.addEventListener('DOMContentLoaded', () => {
     return (user || '').trim().toLowerCase();
   }
 
+  function getPlayersFromHistory(history = loadHistory()) {
+    return Object.values(history)
+      .map((h) => h.user)
+      .filter(Boolean);
+  }
+
   function hasErrorMessage() {
     return document.getElementById('error') !== null;
   }
@@ -241,9 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (entries.length > MAX_HISTORY) {
       entries.sort((a, b) => new Date(a[1].last) - new Date(b[1].last));
-
       const trimmedEntries = entries.slice(entries.length - MAX_HISTORY);
-
       saveHistory(Object.fromEntries(trimmedEntries));
     } else {
       saveHistory(history);
@@ -252,13 +93,193 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function buildUrl(user) {
     const params = new URLSearchParams();
-
     if (user && user.trim() !== '') {
       params.set('user', user);
     }
-
     return window.location.pathname + (params.toString() ? '?' + params.toString() : '');
   }
+
+  // ---------------------------------
+  // --- Player / DOM render helpers -
+  // ---------------------------------
+
+  function createAvatarImg(nickname) {
+    const img = document.createElement('img');
+    if (nickname) {
+      img.src = 'https://mineskin.eu/avatar/' + encodeURIComponent(nickname) + '/8.svg';
+    }
+    img.alt = 'Player Avatar';
+    img.className = 'avatar';
+    return img;
+  }
+
+  function createPlayerLink(nickname, options = {}) {
+    const { title = 'See all highlights by player', includeText = false, paddingRight } = options;
+    const anchor = document.createElement('a');
+    anchor.href = buildUrl(nickname);
+    anchor.title = title;
+    if (paddingRight != null) {
+      anchor.style.paddingRight = paddingRight;
+    }
+    anchor.appendChild(createAvatarImg(nickname));
+    if (includeText) {
+      anchor.appendChild(document.createTextNode(' ' + (nickname || '(all)')));
+    }
+    return anchor;
+  }
+
+  function appendDetailsMessage(container, message, summaryText) {
+    const details = document.createElement('details');
+    details.style.marginBottom = '0.5rem';
+    details.style.color = '#666';
+    details.style.fontStyle = 'italic';
+
+    const summary = document.createElement('summary');
+    summary.style.cursor = 'pointer';
+    summary.style.color = '#666';
+    summary.style.fontStyle = 'italic';
+    summary.textContent = summaryText;
+    details.appendChild(summary);
+
+    const infoP = document.createElement('p');
+    infoP.style.color = '#666';
+    infoP.style.fontStyle = 'italic';
+    infoP.style.marginTop = '0.5rem';
+    infoP.textContent = message;
+    details.appendChild(infoP);
+
+    container.appendChild(details);
+  }
+
+  // ---------------------------
+  // --- Latest from history ---
+  // ---------------------------
+
+  let state = null;
+
+  function renderLatestMatches(vods, notFound = [], notPlayed = [], error) {
+    const container = document.getElementById('latestMatchesContainer');
+    const statusDiv = document.getElementById('latestFromHistoryStatus');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (notFound.length > 0) {
+      appendDetailsMessage(
+        container,
+        `Note: ${notFound.length} user${notFound.length === 1 ? '' : 's'} not found: ${notFound.join(', ')}`,
+        `${notFound.length} invalid user${notFound.length === 1 ? '' : 's'}`,
+      );
+    }
+
+    if (notPlayed.length > 0) {
+      appendDetailsMessage(
+        container,
+        `No matches found this season (including private matches) for: ${notPlayed.join(', ')}`,
+        `${notPlayed.length} player${notPlayed.length === 1 ? '' : 's'} with no matches this season`,
+      );
+    }
+
+    if (error) {
+      const errorP = document.createElement('p');
+      errorP.style.color = 'red';
+      errorP.textContent = error;
+      container.appendChild(errorP);
+      if (statusDiv) statusDiv.innerHTML = '';
+      return;
+    }
+
+    if (!vods || vods.length === 0) {
+      const p = document.createElement('p');
+      p.textContent = 'No highlights found.';
+      container.appendChild(p);
+      if (statusDiv) statusDiv.innerHTML = '';
+      return;
+    }
+
+    for (const vod of vods) {
+      const p = document.createElement('p');
+      p.appendChild(createPlayerLink(vod.vodNickname, { paddingRight: '4px' }));
+
+      const link = document.createElement('a');
+      link.href = vod.vodLink;
+      link.rel = 'noreferrer';
+      link.target = '_blank';
+      link.textContent = `${vod.vodNickname} at ${vod.vodTime}`;
+      p.appendChild(link);
+
+      container.appendChild(p);
+    }
+
+    if (statusDiv) {
+      statusDiv.innerHTML = '';
+    }
+  }
+
+  async function fetchLatestFromHistory(loadMore = false) {
+    const container = document.getElementById('latestMatchesContainer');
+    if (!container) return;
+
+    if (!loadMore || !state) {
+      const history = loadHistory();
+      const entries = Object.entries(history).map(([key, value]) => ({ key, ...value }));
+
+      if (entries.length === 0) {
+        renderLatestMatches([], []);
+        return;
+      }
+
+      let season;
+      const seasonInput = document.getElementById('season');
+      if (seasonInput && seasonInput.value && seasonInput.value.trim() !== '') {
+        season = Number(seasonInput.value);
+      }
+
+      state = {
+        allVods: [],
+        season: season,
+        history: entries,
+        notFound: [],
+      };
+    }
+
+    // Players from the history entries we already loaded into state
+    const players = state.history.map((e) => e.user).filter(Boolean);
+    if (players.length === 0) {
+      renderLatestMatches([], [], []);
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams();
+      params.set('players', players.join(','));
+
+      if (state.season !== undefined) params.set('season', String(state.season));
+
+      const res = await fetch('/api/latest?' + params.toString());
+      if (!res.ok) {
+        renderLatestMatches([], [], [], 'Could not fetch latest matches. An unexpected error occurred.');
+        return;
+      }
+      const json = await res.json();
+      state.allVods = json.vods || [];
+      state.notFound = json.notFound || [];
+      state.notPlayed = json.notPlayed || [];
+    } catch (err) {
+      renderLatestMatches([], [], [], 'An internal error occurred. Check the browser console for more info.');
+      console.error(err);
+      return;
+    }
+
+    if (state.allVods.length === 0) {
+      renderLatestMatches([], state.notFound, state.notPlayed);
+      return;
+    }
+
+    renderLatestMatches(state.allVods, state.notFound, state.notPlayed);
+  }
+
+  // --- Search history (client-side using localStorage) ---
 
   function renderHistory() {
     const tableBody = document.getElementById('historyTableBody');
@@ -270,7 +291,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const history = loadHistory();
     const hasHistory = Object.keys(history).length > 0;
 
-    // Show/hide table + buttons
     if (historyTable) {
       historyTable.style.display = hasHistory ? '' : 'none';
     }
@@ -300,23 +320,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Player cell
       const playerTd = document.createElement('td');
-      const playerLink = document.createElement('a');
-      playerLink.href = buildUrl(entry.user);
-      playerLink.title = 'See all highlights by player';
-      const img = document.createElement('img');
-      if (entry.user) img.src = 'https://mineskin.eu/avatar/' + encodeURIComponent(entry.user) + '/8.svg';
-      img.alt = 'Player Avatar';
-      img.className = 'avatar';
-      playerLink.appendChild(img);
-      playerLink.appendChild(document.createTextNode(' ' + (entry.user || '(all)')));
-      playerTd.appendChild(playerLink);
+      playerTd.appendChild(createPlayerLink(entry.user, { includeText: true }));
       tr.appendChild(playerTd);
 
       // Times accessed
       const countTd = document.createElement('td');
       countTd.textContent = String(entry.count || 0);
       tr.appendChild(countTd);
-
 
       // Last streamed match (initially empty)
       const publicTd = document.createElement('td');
@@ -347,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
           saveHistory(updatedHistory);
           const remaining = Object.keys(updatedHistory).length;
           if (remaining === 0) {
-            renderHistory(); // empty state
+            renderHistory();
           } else {
             tr.remove();
             infoMessage.innerHTML = `Search history (${remaining}/${MAX_HISTORY}). <span title="Your ${MAX_HISTORY} most recent searches are saved; older searches are automatically removed.">ⓘ</span>`;
@@ -363,10 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Fetch last match dates from server and populate table
   async function recalculateLastPublicMatches() {
-    const history = loadHistory();
-    const players = Object.values(history)
-      .map((h) => h.user)
-      .filter(Boolean);
+    const players = getPlayersFromHistory();
     if (players.length === 0) return;
 
     try {
@@ -383,13 +390,11 @@ document.addEventListener('DOMContentLoaded', () => {
       let hasStreamedMatch = false;
       let hasAnyMatch = false;
 
-      // Update last streamed match (vod exists)
       document.querySelectorAll('[data-player-streamed]').forEach((el) => {
         const player = el.getAttribute('data-player-streamed') || '';
         const iso = latestStreamed[player] || null;
         if (iso) {
           hasStreamedMatch = true;
-
           const ms = Date.parse(iso);
           el.textContent = new Date(iso).toLocaleString();
           el.setAttribute('data-sort', String(ms));
@@ -401,13 +406,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
-      // Update latest match (any match)
       document.querySelectorAll('[data-player-latest]').forEach((el) => {
         const player = el.getAttribute('data-player-latest') || '';
         const iso = latestAll[player] || null;
         if (iso) {
           hasAnyMatch = true;
-
           const ms = Date.parse(iso);
           el.textContent = new Date(iso).toLocaleString();
           el.setAttribute('data-sort', String(ms));
@@ -459,7 +462,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const userParam = params.get('user');
-
     if (userParam && userParam.trim() !== '' && !hasErrorMessage()) {
       recordSearch(userParam);
     }
