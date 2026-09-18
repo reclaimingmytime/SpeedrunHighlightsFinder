@@ -317,19 +317,21 @@ document.addEventListener('DOMContentLoaded', () => {
       countTd.textContent = String(entry.count || 0);
       tr.appendChild(countTd);
 
-      // Last accessed
-      const lastTd = document.createElement('td');
-      lastTd.textContent = new Date(entry.last).toLocaleString();
-      lastTd.setAttribute('data-sort', String(Date.parse(entry.last)));
-      tr.appendChild(lastTd);
 
-      // Last match (initially empty)
+      // Last streamed match (initially empty)
       const publicTd = document.createElement('td');
       publicTd.textContent = '—';
       publicTd.title = 'Not calculated yet';
-      publicTd.setAttribute('data-player', entry.user || '');
+      publicTd.setAttribute('data-player-streamed', entry.user || '');
       publicTd.setAttribute('data-sort', '');
       tr.appendChild(publicTd);
+
+      // Latest match (placeholder)
+      const latestTd = document.createElement('td');
+      latestTd.textContent = '—';
+      latestTd.setAttribute('data-player-latest', entry.user || '');
+      latestTd.setAttribute('data-sort', '');
+      tr.appendChild(latestTd);
 
       // Delete button
       const delTd = document.createElement('td');
@@ -376,15 +378,35 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       const json = await res.json();
-      const results = json.results || {};
-      let hasMatch = false;
+      const latestStreamed = json.latestStreamed || {};
+      const latestAll = json.latestAll || {};
+      let hasStreamedMatch = false;
+      let hasAnyMatch = false;
 
-      // Update table cells
-      document.querySelectorAll('[data-player]').forEach((el) => {
-        const player = el.getAttribute('data-player') || '';
-        const iso = results[player] || null;
+      // Update last streamed match (vod exists)
+      document.querySelectorAll('[data-player-streamed]').forEach((el) => {
+        const player = el.getAttribute('data-player-streamed') || '';
+        const iso = latestStreamed[player] || null;
         if (iso) {
-          hasMatch = true;
+          hasStreamedMatch = true;
+
+          const ms = Date.parse(iso);
+          el.textContent = new Date(iso).toLocaleString();
+          el.setAttribute('data-sort', String(ms));
+          el.title = '';
+        } else {
+          el.textContent = 'None';
+          el.setAttribute('data-sort', '');
+          el.title = 'No public match with VOD found';
+        }
+      });
+
+      // Update latest match (any match)
+      document.querySelectorAll('[data-player-latest]').forEach((el) => {
+        const player = el.getAttribute('data-player-latest') || '';
+        const iso = latestAll[player] || null;
+        if (iso) {
+          hasAnyMatch = true;
 
           const ms = Date.parse(iso);
           el.textContent = new Date(iso).toLocaleString();
@@ -397,8 +419,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
-      if (hasMatch) {
+      if (hasStreamedMatch) {
         document.getElementById('lastMatch')?.classList.remove('no-sort');
+      }
+      if (hasAnyMatch) {
+        document.getElementById('latestMatch')?.classList.remove('no-sort');
       }
     } catch (err) {
       console.error(err);
