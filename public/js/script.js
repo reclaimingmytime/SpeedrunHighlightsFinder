@@ -328,6 +328,13 @@ document.addEventListener('DOMContentLoaded', () => {
       countTd.textContent = String(entry.count || 0);
       tr.appendChild(countTd);
 
+      // Last searched
+      const searchedTd = document.createElement('td');
+      const searchedAt = Date.parse(entry.last);
+      searchedTd.textContent = Number.isNaN(searchedAt) ? '—' : new Date(searchedAt).toLocaleString();
+      searchedTd.setAttribute('data-sort', Number.isNaN(searchedAt) ? '' : String(searchedAt));
+      tr.appendChild(searchedTd);
+
       // Last streamed match (initially empty)
       const publicTd = document.createElement('td');
       publicTd.textContent = '—';
