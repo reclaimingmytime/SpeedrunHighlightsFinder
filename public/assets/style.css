@@ -1,0 +1,95 @@
+a:visited {
+  color: #982c61;
+}
+
+p {
+  margin-bottom: 16px;
+}
+
+.avatar {
+  height: 18px;
+  display: inline;
+  margin-bottom: 0;
+}
+
+/* nav link states */
+a.nav-inactive {
+  color: #999;
+  pointer-events: none;
+  text-decoration: none;
+  cursor: default;
+}
+
+/* Player groups (Latest from History) */
+.player-group {
+  margin-bottom: 0.6rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.player-group > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.7rem;
+  background: #f7f7f7;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.player-group > summary::marker {
+  display: none;
+}
+
+.player-group > summary::before {
+  content: '▸';
+  font-size: 0.85em;
+  color: #888;
+  transition: transform 0.15s;
+}
+
+.player-group[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.player-group .count {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.player-group .last-time {
+  margin-left: auto;
+  color: #888;
+  font-size: 0.85em;
+}
+
+.player-group .highlights {
+  margin: 0;
+  padding: 0.4rem 0.7rem 0.6rem;
+}
+
+.player-group .highlights p {
+  margin: 0.25rem 0;
+}
+
+.player-group summary a.latest-btn {
+  margin-left: 0.4rem;
+  padding: 1px 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 0.85em;
+  text-decoration: none;
+}
+
+.player-group summary a:hover {
+  border-bottom: none;
+  text-decoration: underline;
+}
+
+.player-group summary a.latest-btn:hover,
+.player-group summary:hover {
+  background: #f0f0f0;
+}

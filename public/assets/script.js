@@ -164,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     container.innerHTML = '';
 
+    // --- existing “not found / not played” blocks ---
     if (notFound.length > 0) {
       appendDetailsMessage(
         container,
@@ -197,18 +198,84 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // ---------- Group by player ----------
+    const groups = new Map(); // nickname → { nickname, vods: [] }
+
     for (const vod of vods) {
-      const p = document.createElement('p');
-      p.appendChild(createPlayerLink(vod.vodNickname, { paddingRight: '4px' }));
+      const key = vod.vodNickname || '(unknown)';
+      if (!groups.has(key)) {
+        groups.set(key, { nickname: key, vods: [] });
+      }
+      groups.get(key).vods.push(vod);
+    }
 
-      const link = document.createElement('a');
-      link.href = vod.vodLink;
-      link.rel = 'noreferrer';
-      link.target = '_blank';
-      link.textContent = `${vod.vodNickname} at ${vod.vodTime}`;
-      p.appendChild(link);
+    // Keep original order from API (already newest-first globally)
+    const sortedGroups = Array.from(groups.values());
 
-      container.appendChild(p);
+    // ---------- Render groups ----------
+    for (const group of sortedGroups) {
+      const details = document.createElement('details');
+      details.className = 'player-group';
+
+      const summary = document.createElement('summary');
+
+      // avatar + name (clickable → player page)
+      const playerLink = createPlayerLink(group.nickname, {
+        paddingRight: '4px',
+        includeText: true,
+      });
+      // prevent toggling the details when clicking the player link
+      playerLink.addEventListener('click', (e) => e.stopPropagation());
+      summary.appendChild(playerLink);
+
+      // count badge
+      const countSpan = document.createElement('span');
+      countSpan.className = 'count';
+      countSpan.textContent = `· ${group.vods.length}`;
+      summary.appendChild(countSpan);
+
+      // "latest" button → most recent VOD
+      if (group.vods[0]?.vodLink) {
+        const latestLink = document.createElement('a');
+        latestLink.href = group.vods[0].vodLink;
+        latestLink.rel = 'noreferrer';
+        latestLink.target = '_blank';
+        latestLink.textContent = 'latest';
+        latestLink.title = 'Open most recent highlight';
+        latestLink.className = 'latest-btn';
+        latestLink.addEventListener('click', (e) => e.stopPropagation());
+        summary.appendChild(latestLink);
+      }
+
+      // most recent time (right-aligned)
+      if (group.vods[0]?.vodTime) {
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'last-time';
+        timeSpan.textContent = group.vods[0].vodTime;
+        summary.appendChild(timeSpan);
+      }
+
+      details.appendChild(summary);
+
+      // --- body: the individual highlights ---
+      const body = document.createElement('div');
+      body.className = 'highlights';
+
+      for (const vod of group.vods) {
+        const p = document.createElement('p');
+
+        const link = document.createElement('a');
+        link.href = vod.vodLink;
+        link.rel = 'noreferrer';
+        link.target = '_blank';
+        link.textContent = vod.vodTime;
+        p.appendChild(link);
+
+        body.appendChild(p);
+      }
+
+      details.appendChild(body);
+      container.appendChild(details);
     }
 
     if (statusDiv) {

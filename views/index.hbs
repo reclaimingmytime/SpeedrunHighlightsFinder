@@ -22,29 +22,7 @@
       />
     {{/if}}
 
-    <style>
-      a:visited {
-        color: #982c61;
-      }
-
-      p {
-        margin-bottom: 16px;
-      }
-
-      .avatar {
-        height: 18px;
-        display: inline;
-        margin-bottom: 0;
-      }
-
-      /* nav link states */
-      a.nav-inactive {
-        color: #999;
-        pointer-events: none;
-        text-decoration: none;
-        cursor: default;
-      }
-    </style>
+    <link rel="stylesheet" href="/assets/style.css" />
     <title>
       {{#if user}}
         {{ user }} -
@@ -330,6 +308,6 @@
         crossorigin="anonymous"
       ></script>
     {{/if}}
-    <script src="/js/script.js"></script>
+    <script src="/assets/script.js"></script>
   </body>
 </html>
