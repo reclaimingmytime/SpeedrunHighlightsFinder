@@ -49,7 +49,12 @@ export class AppController {
 
     const includeOpponent = req?.cookies?.includeOpponent === 'true';
 
-    const { allVods, lastMatchId, parsedSeason } = await this.vodService.getVods(user, before, season, includeOpponent);
+    const { allVods, lastMatchId, parsedSeason, expiredMatchesMessage } = await this.vodService.getVods(
+      user,
+      before,
+      season,
+      includeOpponent,
+    );
 
     return {
       view: 'latest',
@@ -58,6 +63,7 @@ export class AppController {
       vods: allVods,
       lastMatchId,
       season: parsedSeason,
+      expiredMatchesMessage,
     };
   }
 
@@ -73,6 +79,7 @@ export class AppController {
       vods: response.allVods,
       notFound: response.notFound,
       notPlayed: response.notPlayed,
+      expiredMatchesMessage: response.expiredMatchesMessage,
     };
   }
 

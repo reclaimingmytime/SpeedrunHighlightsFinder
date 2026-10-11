@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { type MatchData } from '../types';
 import { makeApiRequest } from '../utils/api-client';
-import { getCached, writeCache } from '../utils/cache';
+import { getCached, isMatchOlderThanTwoMonths, removeExpiredMatchCache, writeCache } from '../utils/cache';
 import { validateMatchDataResponse, validateMatchIdResponse } from '../utils/validation';
 
 const API_MAX_RESULTS = 100;
@@ -10,26 +10,38 @@ const API_MAX_RESULTS_USER_PAGE = 60;
 
 @Injectable()
 export class MatchService {
-  async getCachedMatch(id: number): Promise<MatchData | null> {
+  private async readCachedMatch(id: number): Promise<{ match: MatchData | null; expired: boolean }> {
     const match = await getCached<MatchData>(`./cache/match_${id}.json`);
-    if (!match) return null;
+    if (!match) return { match: null, expired: false };
     validateMatchDataResponse(match);
-    return match;
+    if (isMatchOlderThanTwoMonths(match.date)) {
+      await removeExpiredMatchCache(id, 'match lookup');
+      return { match: null, expired: true };
+    }
+    return { match, expired: false };
   }
 
-  async getLiveMatchAndCache(id: number): Promise<MatchData> {
+  async getCachedMatch(id: number): Promise<MatchData | null> {
+    return (await this.readCachedMatch(id)).match;
+  }
+
+  async getLiveMatchAndCache(id: number): Promise<MatchData | null> {
     const response = await makeApiRequest('matches/' + id);
     validateMatchDataResponse(response);
+
+    if (isMatchOlderThanTwoMonths(response.date)) {
+      await removeExpiredMatchCache(id, 'match lookup');
+      return null;
+    }
 
     void writeCache(`./cache/match_${id}.json`, response);
     return response;
   }
 
-  async getMatch(id: number): Promise<MatchData> {
-    const cachedMatch = await this.getCachedMatch(id);
-    if (cachedMatch) {
-      return cachedMatch;
-    }
+  async getMatch(id: number): Promise<MatchData | null> {
+    const cached = await this.readCachedMatch(id);
+    if (cached.expired) return null;
+    if (cached.match) return cached.match;
 
     return this.getLiveMatchAndCache(id);
   }

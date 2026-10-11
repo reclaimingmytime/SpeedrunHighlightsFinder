@@ -5,8 +5,11 @@ import { AppModule } from './app.module';
 import { RenderExceptionFilter } from './filters/render-exception-filter';
 import cookieParser from 'cookie-parser';
 import hbs from 'hbs';
+import { removeExpiredCachedMatches } from './utils/cache';
 
 async function bootstrap() {
+  await removeExpiredCachedMatches();
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.useStaticAssets(join(__dirname, '..', 'public'));

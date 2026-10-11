@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let state = null;
 
-  function renderLatestMatches(vods, notFound = [], notPlayed = [], error) {
+  function renderLatestMatches(vods, notFound = [], notPlayed = [], error, expiredMatchesMessage) {
     const container = document.getElementById('latestMatchesContainer');
     const statusDiv = document.getElementById('latestFromHistoryStatus');
     if (!container) return;
@@ -179,6 +179,14 @@ document.addEventListener('DOMContentLoaded', () => {
         `No matches found this season (including private matches) for: ${notPlayed.join(', ')}`,
         `${notPlayed.length} player${notPlayed.length === 1 ? '' : 's'} with no matches this season`,
       );
+    }
+
+    if (expiredMatchesMessage) {
+      const message = document.createElement('p');
+      const italic = document.createElement('em');
+      italic.textContent = expiredMatchesMessage;
+      message.appendChild(italic);
+      container.appendChild(message);
     }
 
     if (error) {
@@ -332,6 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
       state.allVods = json.vods || [];
       state.notFound = json.notFound || [];
       state.notPlayed = json.notPlayed || [];
+      state.expiredMatchesMessage = json.expiredMatchesMessage;
     } catch (err) {
       renderLatestMatches([], [], [], 'An internal error occurred. Check the browser console for more info.');
       console.error(err);
@@ -339,11 +348,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (state.allVods.length === 0) {
-      renderLatestMatches([], state.notFound, state.notPlayed);
+      renderLatestMatches([], state.notFound, state.notPlayed, undefined, state.expiredMatchesMessage);
       return;
     }
 
-    renderLatestMatches(state.allVods, state.notFound, state.notPlayed);
+    renderLatestMatches(state.allVods, state.notFound, state.notPlayed, undefined, state.expiredMatchesMessage);
   }
 
   // --- Search history (client-side using localStorage) ---

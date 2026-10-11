@@ -7,6 +7,7 @@ import { parseAndValidatePlayers, validateBefore, validateSeason, validateUserna
 import { MatchService } from './match.service';
 
 const VOD_TIMESTAMP_PADDING = 6;
+const EXPIRED_MATCHES_MESSAGE = 'Twitch VODs expire after two months, so older matches are unavailable.';
 
 @Injectable()
 export class VodService {
@@ -19,7 +20,9 @@ export class VodService {
 
     const { lastMatchId, matchIds } = await this.matchService.getMatchIDs(validatedUser, parsedBefore, parsedSeason);
 
-    const matches = await Promise.all(matchIds.map((id) => this.matchService.getMatch(id)));
+    const fetchedMatches = await Promise.all(matchIds.map((id) => this.matchService.getMatch(id)));
+    const matches = fetchedMatches.filter((match): match is MatchData => match !== null);
+    const expiredMatchCount = fetchedMatches.length - matches.length;
 
     const allVods = matches.flatMap((match) => this.getDeathVodsFromMatch(match, validatedUser, includeOpponent));
 
@@ -27,6 +30,7 @@ export class VodService {
       allVods,
       lastMatchId,
       parsedSeason,
+      expiredMatchesMessage: expiredMatchCount ? EXPIRED_MATCHES_MESSAGE : undefined,
     };
   }
 
@@ -39,6 +43,7 @@ export class VodService {
     const seen = new Set<string>();
     const notFound: string[] = [];
     const notPlayed: string[] = [];
+    let expiredMatchesFound = false;
 
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
@@ -46,6 +51,7 @@ export class VodService {
 
       if (result.status === 'fulfilled') {
         const { resp } = result.value;
+        expiredMatchesFound ||= Boolean(resp.expiredMatchesMessage);
 
         if (!resp.lastMatchId) {
           notPlayed.push(player);
@@ -72,6 +78,7 @@ export class VodService {
       allVods,
       notFound,
       notPlayed,
+      expiredMatchesMessage: expiredMatchesFound ? EXPIRED_MATCHES_MESSAGE : undefined,
     };
   }
 

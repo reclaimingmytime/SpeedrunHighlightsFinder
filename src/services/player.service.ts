@@ -177,9 +177,7 @@ export class PlayerService {
     };
   }
 
-  async getLastPublicMatchesForPlayers(
-    playersInput?: string,
-  ): Promise<{
+  async getLastPublicMatchesForPlayers(playersInput?: string): Promise<{
     latestStreamed: Record<string, string | null>;
     latestAll: Record<string, string | null>;
   }> {

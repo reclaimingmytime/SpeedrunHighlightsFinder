@@ -133,6 +133,9 @@
         </p>
       {{else}}
         {{#if (eq view "latest")}}
+          {{#if expiredMatchesMessage}}
+            <p><em>{{ expiredMatchesMessage }}</em></p>
+          {{/if}}
           {{#each vods}}
             <p>
               <a href="?user={{ vodNickname }}" title="See all highlights by player">
@@ -147,14 +150,16 @@
           {{#if lastMatchId}}
             <hr />
             <p>
-              <a
-                href="?{{#if user}}user={{ user }}&amp;{{/if}}before={{ lastMatchId }}{{#if season}}&amp;season={{ season }}{{/if}}"
-              >
-                Previous
-              </a>
+              {{#unless expiredMatchesMessage}}
+                <a
+                  href="?{{#if user}}user={{ user }}&amp;{{/if}}before={{ lastMatchId }}{{#if season}}&amp;season={{ season }}{{/if}}"
+                >
+                  Previous
+                </a>
+              {{/unless}}
               {{#if user}}
                 {{#unless error}}
-                  |
+                  {{#unless expiredMatchesMessage}}|{{/unless}}
                   <a
                     id="toggleOpponentClips"
                     href="#"
