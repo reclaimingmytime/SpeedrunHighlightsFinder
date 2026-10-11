@@ -1,5 +1,31 @@
+/* links */
 a:visited {
   color: #982c61;
+}
+
+a.nav-inactive {
+  color: #999;
+  pointer-events: none;
+  text-decoration: none;
+  cursor: default;
+}
+
+/* Tables */
+td {
+  text-align: left;
+}
+
+.deaths-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+}
+
+.deaths-filters label,
+.deaths-filters select,
+.deaths-filters button {
+  margin: 0;
 }
 
 p {
@@ -10,14 +36,6 @@ p {
   height: 18px;
   display: inline;
   margin-bottom: 0;
-}
-
-/* nav link states */
-a.nav-inactive {
-  color: #999;
-  pointer-events: none;
-  text-decoration: none;
-  cursor: default;
 }
 
 /* Player groups (Latest from History) */

@@ -13,7 +13,7 @@
       integrity="sha256-rFoyAIn+rtUKyWRsd6hDbzlnJmklIRroszMxG/mjxeY="
       crossorigin="anonymous"
     />
-    {{#if (or (eq view "dragonrace") (eq view "players") (eq view "history"))}}
+    {{#if (or (eq view "dragonrace") (eq view "history") (eq view "deaths"))}}
       <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css"
@@ -42,7 +42,7 @@
         '
         href="/"
       >
-        Highlights
+        Recent
       </a>
       |
       <a
@@ -69,6 +69,17 @@
       |
       <a
         class='
+          {{#if (eq view "deaths")}}
+            nav-inactive
+          {{/if}}
+        '
+        href="/?view=deaths"
+      >
+        Filter
+      </a>
+      |
+      <a
+        class='
           {{#if (eq view "dragonrace")}}
             nav-inactive
           {{/if}}
@@ -76,17 +87,6 @@
         href="/?view=dragonrace"
       >
         Dragon Race
-      </a>
-      |
-      <a
-        class='
-          {{#if (eq view "players")}}
-            nav-inactive
-          {{/if}}
-        '
-        href="/?view=players"
-      >
-        Players
       </a>
     </div>
 
@@ -247,66 +247,122 @@
       {{/if}}
     {{/if}}
 
-    {{#if (eq view "players")}}
-      <p>All players with a VOD link in the cache and their cached elo.</p>
+    {{#if (eq view "deaths")}}
+      <form class="deaths-filters" action="/" method="get">
+        <input type="hidden" name="view" value="deaths" />
+        <label for="stage">World stage:</label>
+        <select id="stage" name="stage">
+          <option
+            value="all"
+            {{#if (eq selectedStage "all")}}
+              selected
+            {{/if}}
+          >
+            All stages
+          </option>
+          {{#each stages}}
+            <option
+              value="{{ value }}"
+              {{#if (eq ../selectedStage value)}}
+                selected
+              {{/if}}
+            >
+              {{ label }}
+            </option>
+          {{/each}}
+        </select>
+        <label for="rank">Rank:</label>
+        <select id="rank" name="rank">
+          <option
+            value="all"
+            {{#if (eq selectedRank "all")}}
+              selected
+            {{/if}}
+          >
+            All ranks
+          </option>
+          {{#each ranks}}
+            <option
+              value="{{ name }}"
+              {{#if (eq ../selectedRank name)}}
+                selected
+              {{/if}}
+            >
+              {{ rankEmoji }}
+              {{ rankName }}
+            </option>
+          {{/each}}
+          <option
+            value="unranked"
+            {{#if (eq selectedRank "—")}}
+              selected
+            {{/if}}
+          >
+            Unranked
+          </option>
+        </select>
+        <button type="submit">Filter</button>
+      </form>
 
-      {{#if playersElo.players.length}}
-        <table class="sortable">
-          <thead>
-            <tr style="position: sticky;top: 0;background-color: #f9f9f9;">
-              <th>Player</th>
-              <th>Last recorded highlight</th>
-              <th>Rank</th>
-              <th aria-sort="descending">Elo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {{#each playersElo.players}}
-              <tr>
-                <td>
-                  <a
-                    href="?user={{ player }}{{#if season}}&amp;season={{ season }}{{/if}}"
-                  >
-                    <img
-                      class="avatar"
-                      src="https://mineskin.eu/avatar/{{ player }}/8.svg"
-                      style="padding-right: 4px"
-                      alt="Player Avatar"
-                    />
-                    {{ player }}
-                  </a>
-                </td>
-                <td
-                  data-sort="{{#if lastRecordedHighlight}}{{ lastRecordedHighlight.eventUnix }}{{/if}}"
-                >
-                  {{#if lastRecordedHighlight}}
-                    <a href="{{ lastRecordedHighlight.url }}" rel="noreferrer" target="_blank">
-                      {{ lastRecordedHighlight.date }}
-                    </a>
-                  {{else}}
-                    —
-                  {{/if}}
-                </td>
-                <td data-sort="{{ rankIndex }}">{{ rankEmoji }} {{ rankName }}</td>
-                <td
-                  data-sort="{{#if elo}}{{ elo }}{{/if}}"
-                >
-                  {{#if elo}}
-                    {{ elo }}
-                  {{else}}
-                    —
-                  {{/if}}
-                </td>
+      <p>
+        {{ deaths.length }}
+        {{#if (eq deaths.length 1)}}
+          death
+        {{else}}
+          deaths
+        {{/if}}
+        found.
+      </p>
+
+      {{#if deaths.length}}
+        <div class="deaths-table-wrap">
+          <table class="sortable">
+            <thead>
+              <tr style="position: sticky; top: 0; background-color: #f9f9f9;">
+                <th>Player</th>
+                <th data-sort-method="number">Rank / Elo</th>
+                <th>Stage</th>
+                <th aria-sort="descending">VOD Timestamp</th>
               </tr>
-            {{/each}}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {{#each deaths}}
+                <tr>
+                  <td>
+                    <a href="?user={{ player }}">
+                      <img
+                        class="avatar"
+                        src="https://mineskin.eu/avatar/{{ player }}/8.svg"
+                        style="padding-right: 4px"
+                        alt="Player Avatar"
+                      />
+                      {{ player }}
+                    </a>
+                  </td>
+                  <td
+                    data-sort='{{#if (eq rankName "—")}}-1{{else}}{{ elo }}{{/if}}'
+                  >
+                    {{ rankEmoji }}
+                    {{ rankName }}
+                    {{#unless (eq rankName "—")}}
+                      ({{ elo }})
+                    {{/unless}}
+                  </td>
+                  <td>{{ stageLabel }}</td>
+                  <td data-sort="{{ eventUnix }}">
+                    <a href="{{ vodLink }}" rel="noreferrer" target="_blank">{{ date }}</a>
+                  </td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
       {{else}}
-        <p>No players found in cache.</p>
+        <p>No cached VOD deaths found for this stage.</p>
       {{/if}}
     {{/if}}
 
-    {{#if (or (eq view "dragonrace") (eq view "players") (eq view "history"))}}
+    {{#if (or (eq view "dragonrace") (eq view "history") (eq view "deaths"))}}
       <script
         src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable.min.js"
         integrity="sha256-qIfPQq1baWczZMUpr+hQCzHfvj54wuYjvuZDD8abmQ8="

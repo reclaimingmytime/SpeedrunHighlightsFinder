@@ -1,6 +1,7 @@
 import { Controller, Get, Query, Render, Req } from '@nestjs/common';
 import { Request } from 'express';
 
+import { DeathsService } from './services/deaths.service';
 import { DragonRaceService } from './services/dragon-race.service';
 import { PlayerService } from './services/player.service';
 import { VodService } from './services/vod.service';
@@ -11,6 +12,7 @@ export class AppController {
     private readonly vodService: VodService,
     private readonly playerService: PlayerService,
     private readonly dragonRaceService: DragonRaceService,
+    private readonly deathsService: DeathsService,
   ) {}
 
   @Get()
@@ -20,6 +22,8 @@ export class AppController {
     @Query('before') before?: number,
     @Query('season') season?: number,
     @Query('view') view?: string,
+    @Query('stage') stage?: string,
+    @Query('rank') rank?: string,
     @Req() req?: Request,
   ) {
     if (view === 'history' || view === 'latestFromHistory') {
@@ -29,21 +33,24 @@ export class AppController {
       };
     }
 
-    if (view === 'players') {
-      const playersElo = await this.playerService.getAllPlayersElo();
-
-      return {
-        view,
-        playersElo,
-      };
-    }
-
     if (view === 'dragonrace') {
       const conditions = await this.dragonRaceService.getDragonRaceConditions();
 
       return {
         view,
         dragonRaceConditions: conditions,
+      };
+    }
+
+    if (view === 'deaths') {
+      const result = await this.deathsService.getDeaths(stage, rank);
+      return {
+        view,
+        stages: this.deathsService.stages,
+        ranks: this.deathsService.ranks,
+        selectedStage: result.selectedStage,
+        selectedRank: result.selectedRank,
+        deaths: result.deaths,
       };
     }
 

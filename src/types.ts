@@ -24,6 +24,39 @@ export type DragonRaceCondition = {
   eventUnix: number;
 };
 
+export type DeathStage =
+  'overworld' | 'entered nether' | 'bastion' | 'fortress' | 'finding stronghold' | 'stronghold' | 'end';
+
+export type DeathStageOption = {
+  value: DeathStage;
+  label: string;
+};
+
+export type CachedDeath = {
+  matchId: number;
+  player: string;
+  stage: DeathStage;
+  stageLabel: string;
+  elo: number | null;
+  rankName: string;
+  rankIndex: number;
+  rankEmoji: string;
+  date: string;
+  eventUnix: number;
+  vodLink: string;
+};
+
+export type PlayerLatestElo = {
+  elo: number | null;
+  seenAt: number;
+};
+
+export type DeathsResult = {
+  selectedStage: string;
+  selectedRank: string;
+  deaths: CachedDeath[];
+};
+
 export type ApiResponseData = BasicMatchData[] | MatchData | string;
 export type ApiResponse = {
   status: 'success' | 'error';
