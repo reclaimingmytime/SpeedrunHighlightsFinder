@@ -20,6 +20,8 @@ async function bootstrap() {
     return a === b;
   });
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+  hbs.registerHelper('navActive', (view, targetView) => (view === targetView ? 'nav-active' : ''));
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
   hbs.registerHelper('or', function (...args) {
     args.pop();
     return args.some(Boolean);

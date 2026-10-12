@@ -34,60 +34,15 @@
     <h1>MCSR Ranked Highlights</h1>
 
     <div style="margin-bottom: 0.75rem;">
-      <a
-        class='
-          {{#if (eq view "latest")}}
-            nav-inactive
-          {{/if}}
-        '
-        href="/"
-      >
-        Recent
-      </a>
+      <a class='{{navActive view "latest"}}' href="/">Recent</a>
       |
-      <a
-        class='
-          {{#if (eq view "latestFromHistory")}}
-            nav-inactive
-          {{/if}}
-        '
-        href="/?view=latestFromHistory"
-      >
-        Latest from History
-      </a>
+      <a class='{{navActive view "latestFromHistory"}}' href="/?view=latestFromHistory">Latest from History</a>
       |
-      <a
-        class='
-          {{#if (eq view "history")}}
-            nav-inactive
-          {{/if}}
-        '
-        href="/?view=history"
-      >
-        History
-      </a>
+      <a class='{{navActive view "history"}}' href="/?view=history">History</a>
       |
-      <a
-        class='
-          {{#if (eq view "deaths")}}
-            nav-inactive
-          {{/if}}
-        '
-        href="/?view=deaths"
-      >
-        Filter
-      </a>
+      <a class='{{navActive view "deaths"}}' href="/?view=deaths">Filter</a>
       |
-      <a
-        class='
-          {{#if (eq view "dragonrace")}}
-            nav-inactive
-          {{/if}}
-        '
-        href="/?view=dragonrace"
-      >
-        Dragon Race
-      </a>
+      <a class='{{navActive view "dragonrace"}}' href="/?view=dragonrace">Dragon Race</a>
     </div>
 
     {{#if (eq view "latest")}}
