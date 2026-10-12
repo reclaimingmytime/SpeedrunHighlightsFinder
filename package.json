@@ -20,9 +20,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@nestjs/common": "^12.1.2",
-    "@nestjs/core": "^12.1.2",
-    "@nestjs/platform-express": "^12.1.2",
+    "@nestjs/common": "^12.1.3",
+    "@nestjs/core": "^12.1.3",
+    "@nestjs/platform-express": "^12.1.3",
     "cookie-parser": "^1.4.7",
     "hbs": "^4.3.1",
     "p-limit": "^7.3.3",
@@ -33,8 +33,8 @@
     "@eslint/eslintrc": "^3.3.7",
     "@eslint/js": "^10.0.1",
     "@nestjs/cli": "^12.0.8",
-    "@nestjs/schematics": "^12.0.6",
-    "@nestjs/testing": "^12.1.2",
+    "@nestjs/schematics": "^12.0.7",
+    "@nestjs/testing": "^12.1.3",
     "@poliklot/prettier-plugin-handlebars": "^0.4.1",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
@@ -54,7 +54,7 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.71.1"
+    "typescript-eslint": "^8.71.2"
   },
   "jest": {
     "moduleFileExtensions": [
