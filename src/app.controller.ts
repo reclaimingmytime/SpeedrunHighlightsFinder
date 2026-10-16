@@ -4,6 +4,7 @@ import { Request } from 'express';
 import { DeathsService } from './services/deaths.service';
 import { DragonRaceService } from './services/dragon-race.service';
 import { PlayerService } from './services/player.service';
+import { SplitsService } from './services/splits.service';
 import { VodService } from './services/vod.service';
 
 @Controller()
@@ -13,6 +14,7 @@ export class AppController {
     private readonly playerService: PlayerService,
     private readonly dragonRaceService: DragonRaceService,
     private readonly deathsService: DeathsService,
+    private readonly splitsService: SplitsService,
   ) {}
 
   @Get()
@@ -24,6 +26,10 @@ export class AppController {
     @Query('view') view?: string,
     @Query('stage') stage?: string,
     @Query('rank') rank?: string,
+    @Query('page') page?: string,
+    @Query('split') split?: string,
+    @Query('order') order?: string,
+    @Query('player') player?: string,
     @Req() req?: Request,
   ) {
     if (view === 'history' || view === 'latestFromHistory') {
@@ -51,6 +57,15 @@ export class AppController {
         selectedStage: result.selectedStage,
         selectedRank: result.selectedRank,
         deaths: result.deaths,
+      };
+    }
+
+    if (view === 'splits') {
+      const result = await this.splitsService.getSplits(page, rank, split, order, player);
+      return {
+        view,
+        ranks: this.deathsService.ranks,
+        ...result,
       };
     }
 

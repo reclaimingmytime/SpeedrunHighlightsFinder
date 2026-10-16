@@ -13,7 +13,7 @@
       integrity="sha256-rFoyAIn+rtUKyWRsd6hDbzlnJmklIRroszMxG/mjxeY="
       crossorigin="anonymous"
     />
-    {{#if (or (eq view "dragonrace") (eq view "history") (eq view "deaths"))}}
+    {{#if (or (eq view "dragonrace") (eq view "history") (eq view "deaths") (eq view "splits"))}}
       <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css"
@@ -40,7 +40,9 @@
       |
       <a class='{{navActive view "history"}}' href="/?view=history">History</a>
       |
-      <a class='{{navActive view "deaths"}}' href="/?view=deaths">Filter</a>
+      <a class='{{navActive view "deaths"}}' href="/?view=deaths">Deaths</a>
+      |
+      <a class='{{navActive view "splits"}}' href="/?view=splits">Splits</a>
       |
       <a class='{{navActive view "dragonrace"}}' href="/?view=dragonrace">Dragon Race</a>
     </div>
@@ -317,7 +319,197 @@
       {{/if}}
     {{/if}}
 
-    {{#if (or (eq view "dragonrace") (eq view "history") (eq view "deaths"))}}
+    {{#if (eq view "splits")}}
+      <p>Time between each progression split in cached matches. VOD links open at the ending split.</p>
+
+      <form class="deaths-filters splits-filters" action="/" method="get">
+        <input type="hidden" name="view" value="splits" />
+        <div class="splits-player-filter">
+          <label for="player">Player:</label>
+          <input
+            id="player"
+            type="search"
+            name="player"
+            list="split-player-options"
+            value="{{ selectedPlayer }}"
+            placeholder="All players"
+            autocomplete="off"
+          />
+          <datalist id="split-player-options">
+            {{#each playerOptions}}
+              <option value="{{ this }}"></option>
+            {{/each}}
+          </datalist>
+        </div>
+        <div class="splits-filter-controls">
+          <label for="split">Split:</label>
+          <select id="split" name="split">
+            <option
+              value="all"
+              {{#if (eq selectedSplit "all")}}
+                selected
+              {{/if}}
+            >
+              All splits
+            </option>
+            {{#each splitOptions}}
+              <option
+                value="{{ value }}"
+                {{#if (eq ../selectedSplit value)}}
+                  selected
+                {{/if}}
+              >
+                {{ label }}
+              </option>
+            {{/each}}
+          </select>
+          <label for="rank">Rank:</label>
+          <select id="rank" name="rank">
+            <option
+              value="all"
+              {{#if (eq selectedRank "all")}}
+                selected
+              {{/if}}
+            >
+              All ranks
+            </option>
+            {{#each ranks}}
+              <option
+                value="{{ name }}"
+                {{#if (eq ../selectedRank name)}}
+                  selected
+                {{/if}}
+              >
+                {{ rankEmoji }}
+                {{ rankName }}
+              </option>
+            {{/each}}
+            <option
+              value="unranked"
+              {{#if (eq selectedRank "—")}}
+                selected
+              {{/if}}
+            >
+              Unranked
+            </option>
+          </select>
+          <label for="order">Duration:</label>
+          <select id="order" name="order">
+            <option
+              value="desc"
+              {{#if (eq selectedOrder "desc")}}
+                selected
+              {{/if}}
+            >
+              Descending
+            </option>
+            <option
+              value="asc"
+              {{#if (eq selectedOrder "asc")}}
+                selected
+              {{/if}}
+            >
+              Ascending
+            </option>
+          </select>
+          <button type="submit">Filter</button>
+        </div>
+      </form>
+
+      <p>
+        {{ totalSplits }}
+        {{#if (eq totalSplits 1)}}
+          split
+        {{else}}
+          splits
+        {{/if}}
+        found. Showing up to 100 per page (page
+        {{ page }}
+        of
+        {{ pageCount ~}}
+        ).
+      </p>
+
+      {{#if splits.length}}
+        <div class="deaths-table-wrap">
+          <table class="sortable">
+            <thead>
+              <tr style="position: sticky; top: 0; background-color: #f9f9f9;">
+                <th>Player</th>
+                <th data-sort-method="number">Rank / Elo</th>
+                <th>Split</th>
+                <th data-sort-method="number">Difference</th>
+                <th aria-sort="descending">Date &amp; Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each splits}}
+                <tr>
+                  <td>
+                    <a href="?user={{ player }}">
+                      <img
+                        class="avatar"
+                        src="https://mineskin.eu/avatar/{{ player }}/8.svg"
+                        style="padding-right: 4px"
+                        alt="Player Avatar"
+                      />
+                      {{ player }}
+                    </a>
+                  </td>
+                  <td
+                    data-sort='{{#if (eq rankName "—")}}-1{{else}}{{ elo }}{{/if}}'
+                  >
+                    {{ rankEmoji }}
+                    {{ rankName }}
+                    {{#unless (eq rankName "—")}}
+                      ({{ elo }})
+                    {{/unless}}
+                  </td>
+                  <td>{{ fromStage }} -&gt; {{ toStage }}</td>
+                  <td data-sort="{{ durationSeconds }}">{{ duration }}</td>
+                  <td data-sort="{{ eventUnix }}">
+                    <a href="{{ vodLink }}" rel="noreferrer" target="_blank">{{ date }}</a>
+                  </td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+        {{#if hasPrevious}}
+          <p>
+            <a
+              href="/?view=splits&amp;rank={{ rankQuery }}&amp;split={{ selectedSplit }}&amp;order={{ selectedOrder }}&amp;player={{ playerQuery }}&amp;page={{ previousPage }}"
+            >
+              Previous
+            </a>
+            {{#if hasNext}}
+              |
+            {{/if}}
+            {{#if hasNext}}
+              <a
+                href="/?view=splits&amp;rank={{ rankQuery }}&amp;split={{ selectedSplit }}&amp;order={{ selectedOrder }}&amp;player={{ playerQuery }}&amp;page={{ nextPage }}"
+              >
+                Next
+              </a>
+            {{/if}}
+          </p>
+        {{else}}
+          {{#if hasNext}}
+            <p>
+              <a
+                href="/?view=splits&amp;rank={{ rankQuery }}&amp;split={{ selectedSplit }}&amp;order={{ selectedOrder }}&amp;player={{ playerQuery }}&amp;page={{ nextPage }}"
+              >
+                Next
+              </a>
+            </p>
+          {{/if}}
+        {{/if}}
+      {{else}}
+        <p>No cached VOD splits found.</p>
+      {{/if}}
+    {{/if}}
+
+    {{#if (or (eq view "dragonrace") (eq view "history") (eq view "deaths") (eq view "splits"))}}
       <script
         src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable.min.js"
         integrity="sha256-qIfPQq1baWczZMUpr+hQCzHfvj54wuYjvuZDD8abmQ8="

@@ -1,3 +1,12 @@
+export const RANK_THRESHOLDS = [
+  { name: 'Coal', minimumElo: 0 },
+  { name: 'Iron', minimumElo: 600 },
+  { name: 'Gold', minimumElo: 900 },
+  { name: 'Emerald', minimumElo: 1200 },
+  { name: 'Diamond', minimumElo: 1500 },
+  { name: 'Netherite', minimumElo: 2000 },
+] as const;
+
 export function getRankFromElo(elo: number | null) {
   if (elo === null) return { rankName: '—', rankIndex: 0, rankEmoji: '' };
   if (elo <= 599) return { rankName: 'Coal', rankIndex: 1, rankEmoji: '🪨' };

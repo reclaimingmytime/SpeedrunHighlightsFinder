@@ -1,3 +1,7 @@
+body {
+  max-width: 44em;
+}
+
 /* links */
 a:visited {
   color: #982c61;
@@ -25,6 +29,26 @@ td {
 .deaths-filters label,
 .deaths-filters select,
 .deaths-filters button {
+  margin: 0;
+}
+
+.splits-filters {
+  display: block;
+}
+
+.splits-player-filter,
+.splits-filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.splits-player-filter {
+  margin-bottom: 0.5rem;
+}
+
+.splits-player-filter label,
+.splits-player-filter input {
   margin: 0;
 }
 
