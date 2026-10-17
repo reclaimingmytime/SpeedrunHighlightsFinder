@@ -534,6 +534,94 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const viewParam = params.get('view');
 
+    if (viewParam === 'splits') {
+      const splitsTable = document.getElementById('splitsTable');
+      if (splitsTable && typeof window.DataTable === 'function') {
+        const escapeHtml = (value) =>
+          String(value).replace(/[&<>"']/g, (character) => {
+            const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+            return entities[character];
+          });
+        const dataTable = new window.DataTable(splitsTable, {
+          ajax: '/api/splits',
+          serverSide: true,
+          processing: true,
+          order: [[3, 'desc']],
+          pageLength: 25,
+          lengthMenu: [10, 25, 50, 100],
+          paging: true,
+          ordering: true,
+          searching: true,
+          scrollX: true,
+          columns: [
+            {
+              data: 'player',
+              render: (player, type) =>
+                type !== 'display'
+                  ? player
+                  : `<a href="?user=${encodeURIComponent(player)}"><img class="avatar" src="https://mineskin.eu/avatar/${encodeURIComponent(player)}/8.svg" alt="Player Avatar" /> ${escapeHtml(player)}</a>`,
+            },
+            {
+              data: 'rankName',
+              render: (rankName, type, row) =>
+                type !== 'display'
+                  ? (row.elo ?? -1)
+                  : `${escapeHtml(row.rankEmoji)} ${escapeHtml(rankName)}${row.elo === null ? '' : ` (${row.elo})`}`,
+            },
+            {
+              data: 'split',
+              render: (split, type) => escapeHtml(split),
+            },
+            {
+              data: 'durationSeconds',
+              render: (duration, type, row) => (type !== 'display' ? duration : escapeHtml(row.duration)),
+            },
+            {
+              data: 'eventUnix',
+              render: (eventUnix, type, row) =>
+                type !== 'display'
+                  ? eventUnix
+                  : `<a href="${escapeHtml(row.vodLink)}" rel="noreferrer" target="_blank">${escapeHtml(row.date)}</a>`,
+            },
+          ],
+          columnControl: ['order', ['search', 'spacer', 'orderAsc', 'orderDesc', 'orderClear']],
+          columnDefs: [
+            {
+              target: 1,
+              columnControl: {
+                target: 0,
+                content: [
+                  'order',
+                  [{ extend: 'searchList', ajaxOnly: true }, 'spacer', 'orderAsc', 'orderDesc', 'orderClear'],
+                ],
+              },
+            },
+            {
+              target: 2,
+              columnControl: {
+                target: 0,
+                content: [
+                  'order',
+                  [{ extend: 'searchList', ajaxOnly: true }, 'spacer', 'orderAsc', 'orderDesc', 'orderClear'],
+                ],
+              },
+            },
+          ],
+          ordering: {
+            indicators: false,
+          },
+          layout: {
+            topStart: 'pageLength',
+            topEnd: 'search',
+            bottomStart: 'info',
+            bottomEnd: 'paging',
+          },
+        });
+      } else if (splitsTable) {
+        console.error('DataTables or ColumnControl failed to load; splits table enhancements are unavailable.');
+      }
+    }
+
     if (viewParam === 'history') {
       renderHistory();
       return;

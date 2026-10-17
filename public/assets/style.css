@@ -32,24 +32,27 @@ td {
   margin: 0;
 }
 
-.splits-filters {
-  display: block;
-}
-
-.splits-player-filter,
-.splits-filter-controls {
+#splitsTable_wrapper .dt-layout-row:first-child .dt-length,
+#splitsTable_wrapper .dt-layout-row:first-child .dt-search {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-}
-
-.splits-player-filter {
-  margin-bottom: 0.5rem;
-}
-
-.splits-player-filter label,
-.splits-player-filter input {
+  gap: 0.4rem;
   margin: 0;
+  white-space: nowrap;
+}
+
+#splitsTable_wrapper .dt-layout-row:first-child .dt-length label,
+#splitsTable_wrapper .dt-layout-row:first-child .dt-search label {
+  display: inline;
+  margin: 0;
+  /*font-weight: normal;      !* optional – sakura sets font-weight:600 *!*/
+  white-space: nowrap;
+}
+
+#splitsTable_wrapper .dt-layout-row:first-child .dt-length select,
+#splitsTable_wrapper .dt-layout-row:first-child .dt-search input {
+  margin: 0;
+  display: inline-block;
 }
 
 p {

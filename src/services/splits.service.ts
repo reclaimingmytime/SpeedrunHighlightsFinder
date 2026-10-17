@@ -1,9 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 
-import type { DeathStage, MatchData, PlayerLatestElo, Timeline } from '../types';
+import type { DeathStage, MatchData } from '../types';
 import { getAllCachedMatchIds } from '../utils/cache';
+import { getLatestEloByPlayer, groupTimelinesByUuid } from '../utils/match';
 import { PROGRESSION_EVENTS, STAGE_NAMES } from '../utils/progression';
-import { getRankFromElo, RANK_THRESHOLDS } from '../utils/ranking';
+import { getRankFromElo } from '../utils/ranking';
 import { getVodEventTime } from '../utils/time';
 import { MatchService } from './match.service';
 
@@ -16,6 +17,7 @@ export type CachedSplit = {
   rankEmoji: string;
   fromStage: DeathStage;
   toStage: DeathStage;
+  split: string;
   durationSeconds: number;
   duration: string;
   date: string;
@@ -24,27 +26,23 @@ export type CachedSplit = {
 };
 
 type SplitPoint = { stageIndex: number; time: number };
-type SplitOption = { value: string; label: string };
-const SPLITS_PER_PAGE = 100;
 
-export type SplitsPage = {
-  splits: CachedSplit[];
-  splitOptions: SplitOption[];
-  playerOptions: string[];
-  selectedRank: string;
-  rankQuery: string;
-  selectedSplit: string;
-  selectedPlayer: string;
-  playerQuery: string;
-  selectedOrder: 'asc' | 'desc';
-  page: number;
-  pageCount: number;
-  totalSplits: number;
-  previousPage: number;
-  nextPage: number;
-  hasPrevious: boolean;
-  hasNext: boolean;
+type DataTableResponse = {
+  draw: number;
+  recordsTotal: number;
+  recordsFiltered: number;
+  data: CachedSplit[];
+  columnControl: Record<string, { label: string; value: string }[]>;
 };
+
+type SplitDataset = {
+  splits: CachedSplit[];
+  columnControl: DataTableResponse['columnControl'];
+};
+
+const SPLIT_SORT_COLUMNS = ['player', 'rank', 'split', 'duration', 'date'] as const;
+type SplitSortColumn = (typeof SPLIT_SORT_COLUMNS)[number];
+type ColumnSearch = { value: string; logic: string; selectedValues: string[] };
 
 function formatDuration(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
@@ -54,125 +52,249 @@ function formatDuration(seconds: number): string {
 
 @Injectable()
 export class SplitsService {
+  private splitDataset: { matchIdsKey: string; dataset: SplitDataset } | null = null;
+
+  private splitDatasetBuild: { matchIdsKey: string; promise: Promise<SplitDataset> } | null = null;
+
   constructor(private readonly matchService: MatchService) {}
 
-  async getSplits(
-    pageInput?: string,
-    rankInput?: string,
-    splitInput?: string,
-    orderInput?: string,
-    playerInput?: string,
-  ): Promise<SplitsPage> {
+  async getDataTablePage(query: Record<string, unknown>): Promise<DataTableResponse> {
+    const draw = this.parseInteger(this.getQueryValue(query, 'draw'), 'draw', 0);
+    const start = this.parseInteger(this.getQueryValue(query, 'start'), 'start', 0);
+    const length = this.parseInteger(this.getQueryValue(query, 'length'), 'length', 10);
+    if (length === 0 || length < -1) {
+      throw new BadRequestException('Query "length" must be -1 or a positive integer.');
+    }
+
+    const searchValue = this.getStringValue(this.getQueryValue(query, 'search[value]'), 'search[value]')
+      .trim()
+      .toLocaleLowerCase();
+    const columnSearches = SPLIT_SORT_COLUMNS.map((_, index) => this.getColumnSearch(query, index));
+    const orders = this.parseOrders(query);
     const matchIds = await getAllCachedMatchIds();
-    const matches = await Promise.all(matchIds.map((id) => this.matchService.getCachedMatch(id)));
-    const cachedMatches = matches.filter((match): match is MatchData => match !== null);
-    const eloByPlayer = this.getLatestEloByPlayer(cachedMatches);
-    const allSplits = cachedMatches.flatMap((match) => this.getMatchSplits(match, eloByPlayer));
-    const selectedRank = this.parseRank(rankInput);
-    const splitOptions = this.getSplitOptions(allSplits);
-    const selectedSplit = this.parseSplit(splitInput, splitOptions);
-    const selectedOrder = this.parseOrder(orderInput);
-    const selectedPlayer = playerInput?.trim() ?? '';
-    const playerOptions = Array.from(new Set(allSplits.map(({ player }) => player))).sort((a, b) => a.localeCompare(b));
-    const filteredSplits = allSplits
-      .filter(
-        (split) =>
-          (!selectedRank || split.rankName === selectedRank) &&
-          (!selectedSplit || this.getSplitKey(split) === selectedSplit) &&
-          (!selectedPlayer || split.player.toLowerCase().includes(selectedPlayer.toLowerCase())),
-      )
-      .sort((a, b) =>
-        selectedOrder === 'asc'
-          ? a.durationSeconds - b.durationSeconds || a.eventUnix - b.eventUnix
-          : b.durationSeconds - a.durationSeconds || b.eventUnix - a.eventUnix,
-      );
-    const pageCount = Math.max(1, Math.ceil(filteredSplits.length / SPLITS_PER_PAGE));
-    const requestedPage = Number(pageInput);
-    const page = Number.isInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, pageCount) : 1;
-    const start = (page - 1) * SPLITS_PER_PAGE;
+    const { splits: allSplits, columnControl } = await this.getSplitDataset(matchIds);
+    const hasSearch =
+      Boolean(searchValue) ||
+      columnSearches.some(({ value, selectedValues }) => Boolean(value) || selectedValues.length > 0);
+    const filteredSplits = hasSearch
+      ? allSplits.filter((split) => this.matchesSearch(split, searchValue, columnSearches))
+      : allSplits;
 
     return {
-      splits: filteredSplits.slice(start, start + SPLITS_PER_PAGE),
-      splitOptions,
-      playerOptions,
-      selectedRank: selectedRank ?? 'all',
-      rankQuery: selectedRank === '—' ? 'unranked' : (selectedRank ?? 'all'),
-      selectedSplit: selectedSplit ?? 'all',
-      selectedPlayer,
-      playerQuery: encodeURIComponent(selectedPlayer),
-      selectedOrder,
-      page,
-      pageCount,
-      totalSplits: filteredSplits.length,
-      previousPage: Math.max(1, page - 1),
-      nextPage: Math.min(pageCount, page + 1),
-      hasPrevious: page > 1,
-      hasNext: page < pageCount,
+      draw,
+      recordsTotal: allSplits.length,
+      recordsFiltered: filteredSplits.length,
+      data: this.sortSplits(filteredSplits, orders).slice(start, length === -1 ? undefined : start + length),
+      columnControl,
     };
   }
 
-  private parseRank(rankInput?: string): string | undefined {
-    if (!rankInput || rankInput.toLowerCase() === 'all') return undefined;
+  private async getSplitDataset(matchIds: number[]): Promise<SplitDataset> {
+    const sortedMatchIds = [...matchIds].sort((a, b) => a - b);
+    const matchIdsKey = JSON.stringify(sortedMatchIds);
+    if (this.splitDataset?.matchIdsKey === matchIdsKey) return this.splitDataset.dataset;
+    if (this.splitDatasetBuild?.matchIdsKey === matchIdsKey) return this.splitDatasetBuild.promise;
 
-    const normalized = rankInput.trim().toLowerCase();
-    if (normalized === 'unranked') return '—';
+    const pending = {
+      matchIdsKey,
+      promise: this.buildSplitDataset(sortedMatchIds),
+    };
+    this.splitDatasetBuild = pending;
 
-    const rank = RANK_THRESHOLDS.find(({ name }) => name.toLowerCase() === normalized);
-    if (rank) return rank.name;
-
-    throw new BadRequestException(
-      `Unknown rank. Choose from: all, ${RANK_THRESHOLDS.map(({ name }) => name).join(', ')}, unranked`,
-    );
-  }
-
-  private parseSplit(splitInput: string | undefined, options: SplitOption[]): string | undefined {
-    if (!splitInput || splitInput.toLowerCase() === 'all') return undefined;
-    if (options.some(({ value }) => value === splitInput)) return splitInput;
-
-    throw new BadRequestException(`Unknown split. Choose from: all, ${options.map(({ label }) => label).join(', ')}`);
-  }
-
-  private parseOrder(orderInput?: string): 'asc' | 'desc' {
-    if (!orderInput || orderInput.toLowerCase() === 'desc') return 'desc';
-    if (orderInput.toLowerCase() === 'asc') return 'asc';
-
-    throw new BadRequestException('Unknown order. Choose from: asc, desc');
-  }
-
-  private getSplitOptions(splits: CachedSplit[]): SplitOption[] {
-    const options = new Map<string, SplitOption>();
-    for (const split of splits) {
-      const value = this.getSplitKey(split);
-      options.set(value, { value, label: `${split.fromStage} -> ${split.toStage}` });
-    }
-
-    return Array.from(options.values()).sort((a, b) => a.value.localeCompare(b.value, undefined, { numeric: true }));
-  }
-
-  private getSplitKey(split: Pick<CachedSplit, 'fromStage' | 'toStage'>): string {
-    return `${STAGE_NAMES.indexOf(split.fromStage)}-${STAGE_NAMES.indexOf(split.toStage)}`;
-  }
-
-  private getLatestEloByPlayer(matches: MatchData[]): Map<string, number | null> {
-    const eloByPlayer = new Map<string, PlayerLatestElo>();
-
-    for (const match of matches) {
-      if (!Array.isArray(match.vod) || match.vod.length === 0) continue;
-
-      for (const player of match.players) {
-        if (!player.nickname || player.nickname.trim().toLowerCase() === '[ranked bot]') continue;
-
-        const key = player.nickname.trim().toLowerCase();
-        const current = eloByPlayer.get(key) ?? { elo: null, seenAt: 0 };
-        if (typeof player.eloRate === 'number' && match.date > current.seenAt) {
-          current.elo = player.eloRate;
-          current.seenAt = match.date;
-        }
-        eloByPlayer.set(key, current);
+    try {
+      const dataset = await pending.promise;
+      if (this.splitDatasetBuild === pending) {
+        this.splitDataset = { matchIdsKey, dataset };
+        this.splitDatasetBuild = null;
       }
+      return dataset;
+    } catch (error) {
+      if (this.splitDatasetBuild === pending) this.splitDatasetBuild = null;
+      throw error;
+    }
+  }
+
+  private async buildSplitDataset(matchIds: number[]): Promise<SplitDataset> {
+    const matches = await Promise.all(matchIds.map((id) => this.matchService.getCachedMatch(id)));
+    const cachedMatches = matches.filter((match): match is MatchData => match !== null);
+    const eloByPlayer = getLatestEloByPlayer(cachedMatches);
+    const splits = cachedMatches.flatMap((match) => this.getMatchSplits(match, eloByPlayer));
+    return { splits, columnControl: this.getColumnControlOptions(splits) };
+  }
+
+  private getColumnControlOptions(splits: CachedSplit[]): Record<string, { label: string; value: string }[]> {
+    const ranks = new Map<string, number>();
+    const splitOptions = new Map<string, { label: string; value: string }>();
+
+    for (const split of splits) {
+      ranks.set(split.rankName, split.rankIndex);
+      splitOptions.set(split.split, { label: split.split, value: split.split });
     }
 
-    return new Map(Array.from(eloByPlayer, ([player, info]) => [player, info.elo]));
+    return {
+      rankName: Array.from(ranks, ([value, rankIndex]) => ({
+        label: value === '—' ? 'Unranked' : value,
+        value,
+        rankIndex,
+      }))
+        .sort((a, b) => a.rankIndex - b.rankIndex)
+        .map(({ label, value }) => ({ label, value })),
+      split: Array.from(splitOptions.values()).sort((a, b) =>
+        a.value.localeCompare(b.value, undefined, { numeric: true }),
+      ),
+    };
+  }
+
+  private getQueryValue(query: Record<string, unknown>, key: string): unknown {
+    if (key in query) return query[key];
+
+    const path = key.match(/[^[\]]+/g);
+    if (!path) return undefined;
+
+    let value: unknown = query;
+    for (const segment of path) {
+      if (typeof value !== 'object' || value === null || !(segment in value)) return undefined;
+      value = (value as Record<string, unknown>)[segment];
+    }
+    return value;
+  }
+
+  private getColumnSearch(query: Record<string, unknown>, index: number): ColumnSearch {
+    const selectedValues = this.getColumnControlList(query, index);
+    const columnControlValue = this.getQueryValue(query, `columns[${index}][columnControl][search][value]`);
+    if (columnControlValue !== undefined) {
+      return {
+        value: this.getStringValue(columnControlValue, `columns[${index}][columnControl][search][value]`)
+          .trim()
+          .toLocaleLowerCase(),
+        logic: this.getStringValue(
+          this.getQueryValue(query, `columns[${index}][columnControl][search][logic]`),
+          `columns[${index}][columnControl][search][logic]`,
+        ),
+        selectedValues,
+      };
+    }
+
+    return {
+      value: this.getStringValue(
+        this.getQueryValue(query, `columns[${index}][search][value]`),
+        `columns[${index}][search][value]`,
+      )
+        .trim()
+        .toLocaleLowerCase(),
+      logic: 'contains',
+      selectedValues,
+    };
+  }
+
+  private getColumnControlList(query: Record<string, unknown>, index: number): string[] {
+    const key = `columns[${index}][columnControl][list]`;
+    const nestedValue = this.getQueryValue(query, key);
+    if (Array.isArray(nestedValue)) {
+      return nestedValue
+        .filter((value): value is string => typeof value === 'string')
+        .map((value) => value.toLocaleLowerCase());
+    }
+    if (typeof nestedValue === 'object' && nestedValue !== null) {
+      return Object.entries(nestedValue)
+        .filter(([listIndex, value]) => /^\d+$/.test(listIndex) && typeof value === 'string')
+        .sort(([indexA], [indexB]) => Number(indexA) - Number(indexB))
+        .map(([, value]) => (value as string).toLocaleLowerCase());
+    }
+    if (typeof nestedValue === 'string') return [nestedValue.toLocaleLowerCase()];
+
+    const listPrefix = `${key}[`;
+    return Object.entries(query)
+      .flatMap(([param, value]) => {
+        if (!param.startsWith(listPrefix) || !param.endsWith(']') || typeof value !== 'string') return [];
+        const listIndex = param.slice(listPrefix.length, -1);
+        return /^\d+$/.test(listIndex) ? [{ index: Number(listIndex), value }] : [];
+      })
+      .sort((a, b) => a.index - b.index)
+      .map(({ value }) => value.toLocaleLowerCase());
+  }
+
+  private getStringValue(value: unknown, name: string): string {
+    if (value === undefined) return '';
+    if (typeof value !== 'string') throw new BadRequestException(`Query "${name}" must be a string.`);
+    return value;
+  }
+
+  private parseInteger(value: unknown, name: string, defaultValue: number): number {
+    if (value === undefined) return defaultValue;
+    if (typeof value !== 'string' || !/^-?\d+$/.test(value)) {
+      throw new BadRequestException(`Query "${name}" must be an integer.`);
+    }
+
+    const parsed = Number(value);
+    if (!Number.isSafeInteger(parsed) || (parsed < 0 && name !== 'length')) {
+      throw new BadRequestException(`Query "${name}" must be a non-negative integer.`);
+    }
+    return parsed;
+  }
+
+  private parseOrders(query: Record<string, unknown>): { column: SplitSortColumn; direction: 'asc' | 'desc' }[] {
+    const orders: { column: SplitSortColumn; direction: 'asc' | 'desc' }[] = [];
+    for (let index = 0; index < SPLIT_SORT_COLUMNS.length; index += 1) {
+      const columnInput = this.getQueryValue(query, `order[${index}][column]`);
+      if (columnInput === undefined) break;
+      const columnIndex = this.parseInteger(columnInput, `order[${index}][column]`, 0);
+      const column = SPLIT_SORT_COLUMNS[columnIndex];
+      if (!column) throw new BadRequestException(`Query "order[${index}][column]" is invalid.`);
+
+      const direction = this.getStringValue(this.getQueryValue(query, `order[${index}][dir]`), `order[${index}][dir]`);
+      if (direction !== 'asc' && direction !== 'desc') {
+        throw new BadRequestException(`Query "order[${index}][dir]" must be asc or desc.`);
+      }
+      orders.push({ column, direction });
+    }
+    return orders.length ? orders : [{ column: 'duration', direction: 'desc' }];
+  }
+
+  private matchesSearch(split: CachedSplit, globalSearch: string, columnSearches: ColumnSearch[]): boolean {
+    const columnValues = [split.player, split.rankName, split.split, split.duration, split.date];
+    const globalMatches =
+      !globalSearch || columnValues.some((value) => value.toLocaleLowerCase().includes(globalSearch));
+    const columnsMatch = columnSearches.every(({ value, logic, selectedValues }, index) => {
+      const normalizedValue = columnValues[index].toLocaleLowerCase();
+      const listMatches = selectedValues.length === 0 || selectedValues.includes(normalizedValue);
+      const searchMatches = !value || (logic === 'equal' ? normalizedValue === value : normalizedValue.includes(value));
+      return listMatches && searchMatches;
+    });
+    return globalMatches && columnsMatch;
+  }
+
+  private sortSplits(
+    splits: CachedSplit[],
+    orders: { column: SplitSortColumn; direction: 'asc' | 'desc' }[],
+  ): CachedSplit[] {
+    return [...splits].sort((a, b) => {
+      for (const { column, direction } of orders) {
+        let comparison = 0;
+        switch (column) {
+          case 'player':
+            comparison = a.player.localeCompare(b.player);
+            break;
+          case 'rank':
+            comparison = (a.elo ?? -1) - (b.elo ?? -1);
+            break;
+          case 'split':
+            comparison =
+              STAGE_NAMES.indexOf(a.fromStage) - STAGE_NAMES.indexOf(b.fromStage) ||
+              STAGE_NAMES.indexOf(a.toStage) - STAGE_NAMES.indexOf(b.toStage);
+            break;
+          case 'duration':
+            comparison = a.durationSeconds - b.durationSeconds;
+            break;
+          case 'date':
+            comparison = a.eventUnix - b.eventUnix;
+            break;
+        }
+        if (comparison !== 0) return direction === 'asc' ? comparison : -comparison;
+      }
+
+      return b.eventUnix - a.eventUnix || b.matchId - a.matchId;
+    });
   }
 
   private getMatchSplits(match: MatchData, eloByPlayer: Map<string, number | null>): CachedSplit[] {
@@ -180,13 +302,7 @@ export class SplitsService {
 
     const playersByUuid = new Map(match.players.map((player) => [player.uuid, player.nickname]));
     const vodsByUuid = new Map(match.vod.map((vod) => [vod.uuid, vod]));
-    const timelinesByUuid = new Map<string, Timeline[]>();
-
-    for (const event of match.timelines) {
-      const events = timelinesByUuid.get(event.uuid) ?? [];
-      events.push(event);
-      timelinesByUuid.set(event.uuid, events);
-    }
+    const timelinesByUuid = groupTimelinesByUuid(match.timelines);
 
     const splits: CachedSplit[] = [];
     for (const [uuid, events] of timelinesByUuid) {
@@ -225,6 +341,7 @@ export class SplitsService {
           rankEmoji,
           fromStage: STAGE_NAMES[start.stageIndex],
           toStage: STAGE_NAMES[end.stageIndex],
+          split: `${STAGE_NAMES[start.stageIndex]} -> ${STAGE_NAMES[end.stageIndex]}`,
           durationSeconds,
           duration: formatDuration(durationSeconds),
           date,

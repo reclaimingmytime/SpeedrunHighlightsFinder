@@ -1,15 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 
-import type {
-  CachedDeath,
-  DeathStage,
-  DeathStageOption,
-  DeathsResult,
-  MatchData,
-  PlayerLatestElo,
-  Timeline,
-} from '../types';
+import type { CachedDeath, DeathStage, DeathStageOption, DeathsResult, MatchData } from '../types';
 import { getAllCachedMatchIds } from '../utils/cache';
+import { getLatestEloByPlayer, groupTimelinesByUuid } from '../utils/match';
 import { PROGRESSION_EVENTS, STAGE_NAMES } from '../utils/progression';
 import { getRankFromElo, RANK_THRESHOLDS } from '../utils/ranking';
 import { getVodEventTime } from '../utils/time';
@@ -40,7 +33,7 @@ export class DeathsService {
     const matchIds = await getAllCachedMatchIds();
     const matches = await Promise.all(matchIds.map((id) => this.matchService.getCachedMatch(id)));
     const cachedMatches = matches.filter((match): match is MatchData => match !== null);
-    const eloByPlayer = this.getLatestEloByPlayer(cachedMatches);
+    const eloByPlayer = getLatestEloByPlayer(cachedMatches);
     const deaths = cachedMatches
       .flatMap((match) => this.getMatchDeaths(match, selectedStage, eloByPlayer))
       .filter((death) => !selectedRank || death.rankName === selectedRank)
@@ -73,28 +66,6 @@ export class DeathsService {
     );
   }
 
-  private getLatestEloByPlayer(matches: MatchData[]): Map<string, number | null> {
-    const eloByPlayer = new Map<string, PlayerLatestElo>();
-
-    for (const match of matches) {
-      if (!Array.isArray(match.vod) || match.vod.length === 0) continue;
-
-      for (const player of match.players) {
-        if (!player.nickname || player.nickname.trim().toLowerCase() === '[ranked bot]') continue;
-
-        const key = player.nickname.trim().toLowerCase();
-        const current = eloByPlayer.get(key) ?? { elo: null, seenAt: 0 };
-        if (typeof player.eloRate === 'number' && match.date > current.seenAt) {
-          current.elo = player.eloRate;
-          current.seenAt = match.date;
-        }
-        eloByPlayer.set(key, current);
-      }
-    }
-
-    return new Map(Array.from(eloByPlayer, ([player, info]) => [player, info.elo]));
-  }
-
   private getMatchDeaths(
     match: MatchData,
     selectedStage: DeathStage | undefined,
@@ -102,13 +73,7 @@ export class DeathsService {
   ): CachedDeath[] {
     const playersByUuid = new Map(match.players.map((player) => [player.uuid, player.nickname]));
     const vodsByUuid = new Map(match.vod.map((vod) => [vod.uuid, vod]));
-    const timelinesByUuid = new Map<string, Timeline[]>();
-
-    for (const event of match.timelines) {
-      const events = timelinesByUuid.get(event.uuid) ?? [];
-      events.push(event);
-      timelinesByUuid.set(event.uuid, events);
-    }
+    const timelinesByUuid = groupTimelinesByUuid(match.timelines);
 
     const deaths: CachedDeath[] = [];
     for (const [uuid, events] of timelinesByUuid) {
