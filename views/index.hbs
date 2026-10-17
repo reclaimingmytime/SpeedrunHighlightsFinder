@@ -286,48 +286,46 @@
       </p>
 
       {{#if deaths.length}}
-        <div class="deaths-table-wrap">
-          <table class="sortable">
-            <thead>
-              <tr style="position: sticky; top: 0; background-color: #f9f9f9;">
-                <th>Player</th>
-                <th data-sort-method="number">Rank / Elo</th>
-                <th>Stage</th>
-                <th aria-sort="descending">VOD Timestamp</th>
+        <table class="sortable">
+          <thead>
+            <tr style="position: sticky; top: 0; background-color: #f9f9f9;">
+              <th>Player</th>
+              <th data-sort-method="number">Rank / Elo</th>
+              <th>Stage</th>
+              <th aria-sort="descending">VOD Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each deaths}}
+              <tr>
+                <td>
+                  <a href="?user={{ player }}">
+                    <img
+                      class="avatar"
+                      src="https://mineskin.eu/avatar/{{ player }}/8.svg"
+                      style="padding-right: 4px"
+                      alt="Player Avatar"
+                    />
+                    {{ player }}
+                  </a>
+                </td>
+                <td
+                  data-sort='{{#if (eq rankName "—")}}-1{{else}}{{ elo }}{{/if}}'
+                >
+                  {{ rankEmoji }}
+                  {{ rankName }}
+                  {{#unless (eq rankName "—")}}
+                    ({{ elo }})
+                  {{/unless}}
+                </td>
+                <td>{{ stageLabel }}</td>
+                <td data-sort="{{ eventUnix }}">
+                  <a href="{{ vodLink }}" rel="noreferrer" target="_blank">{{ date }}</a>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {{#each deaths}}
-                <tr>
-                  <td>
-                    <a href="?user={{ player }}">
-                      <img
-                        class="avatar"
-                        src="https://mineskin.eu/avatar/{{ player }}/8.svg"
-                        style="padding-right: 4px"
-                        alt="Player Avatar"
-                      />
-                      {{ player }}
-                    </a>
-                  </td>
-                  <td
-                    data-sort='{{#if (eq rankName "—")}}-1{{else}}{{ elo }}{{/if}}'
-                  >
-                    {{ rankEmoji }}
-                    {{ rankName }}
-                    {{#unless (eq rankName "—")}}
-                      ({{ elo }})
-                    {{/unless}}
-                  </td>
-                  <td>{{ stageLabel }}</td>
-                  <td data-sort="{{ eventUnix }}">
-                    <a href="{{ vodLink }}" rel="noreferrer" target="_blank">{{ date }}</a>
-                  </td>
-                </tr>
-              {{/each}}
-            </tbody>
-          </table>
-        </div>
+            {{/each}}
+          </tbody>
+        </table>
       {{else}}
         <p>No cached VOD deaths found for this stage.</p>
       {{/if}}
@@ -335,21 +333,18 @@
 
     {{#if (eq view "splits")}}
       <p>Time between each progression split in cached matches. VOD links open at the ending split.</p>
-      <h2>Splits</h2>
-      <div class="deaths-table-wrap">
-        <table id="splitsTable">
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Rank / Elo</th>
-              <th>Split</th>
-              <th>Difference</th>
-              <th>Date &amp; Time</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+      <table id="splitsTable">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Rank / Elo</th>
+            <th>Split</th>
+            <th>Difference</th>
+            <th>Date &amp; Time</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     {{/if}}
 
     {{#if (or (eq view "dragonrace") (eq view "history") (eq view "deaths"))}}
