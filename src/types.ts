@@ -14,6 +14,7 @@ export type MatchData = {
   result: { uuid: string; time: number };
   forfeited: boolean;
   season: number;
+  seedType?: string | null;
 };
 export type DeathEvent = { vodNickname: string; vodTime: string; vodLink: string; eventUnix: number };
 export type DragonRaceCondition = {

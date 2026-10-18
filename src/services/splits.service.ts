@@ -11,6 +11,7 @@ import { MatchService } from './match.service';
 export type CachedSplit = {
   matchId: number;
   player: string;
+  seedType: string;
   elo: number | null;
   rankName: string;
   rankIndex: number;
@@ -40,7 +41,7 @@ type SplitDataset = {
   columnControl: DataTableResponse['columnControl'];
 };
 
-const SPLIT_SORT_COLUMNS = ['player', 'rank', 'split', 'duration', 'date'] as const;
+const SPLIT_SORT_COLUMNS = ['player', 'rank', 'split', 'seedType', 'duration', 'date'] as const;
 type SplitSortColumn = (typeof SPLIT_SORT_COLUMNS)[number];
 type ColumnSearch = { value: string; logic: string; selectedValues: string[] };
 
@@ -125,10 +126,12 @@ export class SplitsService {
   private getColumnControlOptions(splits: CachedSplit[]): Record<string, { label: string; value: string }[]> {
     const ranks = new Map<string, number>();
     const splitOptions = new Map<string, { label: string; value: string }>();
+    const seedTypes = new Set<string>();
 
     for (const split of splits) {
       ranks.set(split.rankName, split.rankIndex);
       splitOptions.set(split.split, { label: split.split, value: split.split });
+      seedTypes.add(split.seedType);
     }
 
     return {
@@ -142,6 +145,9 @@ export class SplitsService {
       split: Array.from(splitOptions.values()).sort((a, b) =>
         a.value.localeCompare(b.value, undefined, { numeric: true }),
       ),
+      seedType: Array.from(seedTypes)
+        .sort((a, b) => a.localeCompare(b))
+        .map((value) => ({ label: value, value })),
     };
   }
 
@@ -252,7 +258,7 @@ export class SplitsService {
   }
 
   private matchesSearch(split: CachedSplit, globalSearch: string, columnSearches: ColumnSearch[]): boolean {
-    const columnValues = [split.player, split.rankName, split.split, split.duration, split.date];
+    const columnValues = [split.player, split.rankName, split.split, split.seedType, split.duration, split.date];
     const globalMatches =
       !globalSearch || columnValues.some((value) => value.toLocaleLowerCase().includes(globalSearch));
     const columnsMatch = columnSearches.every(({ value, logic, selectedValues }, index) => {
@@ -282,6 +288,9 @@ export class SplitsService {
             comparison =
               STAGE_NAMES.indexOf(a.fromStage) - STAGE_NAMES.indexOf(b.fromStage) ||
               STAGE_NAMES.indexOf(a.toStage) - STAGE_NAMES.indexOf(b.toStage);
+            break;
+          case 'seedType':
+            comparison = a.seedType.localeCompare(b.seedType);
             break;
           case 'duration':
             comparison = a.durationSeconds - b.durationSeconds;
@@ -335,6 +344,7 @@ export class SplitsService {
         splits.push({
           matchId: match.id,
           player,
+          seedType: match.seedType ?? 'Unknown',
           elo,
           rankName,
           rankIndex,

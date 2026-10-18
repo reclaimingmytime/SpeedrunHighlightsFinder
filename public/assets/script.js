@@ -546,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ajax: '/api/splits',
           serverSide: true,
           processing: true,
-          order: [[3, 'desc']],
+          order: [[4, 'desc']],
           pageLength: 25,
           lengthMenu: [10, 25, 50, 100],
           paging: true,
@@ -571,6 +571,10 @@ document.addEventListener('DOMContentLoaded', () => {
             {
               data: 'split',
               render: (split, type) => escapeHtml(split),
+            },
+            {
+              data: 'seedType',
+              render: (seedType) => escapeHtml(seedType),
             },
             {
               data: 'durationSeconds',
@@ -598,6 +602,16 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             {
               target: 2,
+              columnControl: {
+                target: 0,
+                content: [
+                  'order',
+                  [{ extend: 'searchList', ajaxOnly: true }, 'spacer', 'orderAsc', 'orderDesc', 'orderClear'],
+                ],
+              },
+            },
+            {
+              target: 3,
               columnControl: {
                 target: 0,
                 content: [
