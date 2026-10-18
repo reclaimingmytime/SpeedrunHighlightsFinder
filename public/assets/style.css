@@ -19,16 +19,16 @@ td {
   text-align: left;
 }
 
-.deaths-filters {
+.fails-filters {
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.deaths-filters label,
-.deaths-filters select,
-.deaths-filters button {
+.fails-filters label,
+.fails-filters select,
+.fails-filters button {
   margin: 0;
 }
 

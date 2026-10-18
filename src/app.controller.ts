@@ -1,7 +1,7 @@
 import { Controller, Get, Query, Render, Req } from '@nestjs/common';
 import { Request } from 'express';
 
-import { DeathsService } from './services/deaths.service';
+import { FailsService } from './services/fails.service';
 import { DragonRaceService } from './services/dragon-race.service';
 import { PlayerService } from './services/player.service';
 import { SplitsService } from './services/splits.service';
@@ -13,7 +13,7 @@ export class AppController {
     private readonly vodService: VodService,
     private readonly playerService: PlayerService,
     private readonly dragonRaceService: DragonRaceService,
-    private readonly deathsService: DeathsService,
+    private readonly failsService: FailsService,
     private readonly splitsService: SplitsService,
   ) {}
 
@@ -26,6 +26,7 @@ export class AppController {
     @Query('view') view?: string,
     @Query('stage') stage?: string,
     @Query('rank') rank?: string,
+    @Query('type') type?: string,
     @Req() req?: Request,
   ) {
     if (view === 'history' || view === 'latestFromHistory') {
@@ -44,15 +45,18 @@ export class AppController {
       };
     }
 
-    if (view === 'deaths') {
-      const result = await this.deathsService.getDeaths(stage, rank);
+    if (view === 'fails' || view === 'deaths') {
+      const result = await this.failsService.getFails(stage, rank, type);
       return {
-        view,
-        stages: this.deathsService.stages,
-        ranks: this.deathsService.ranks,
+        view: 'fails',
+        stages: this.failsService.stages,
+        ranks: this.failsService.ranks,
+        failTypes: this.failsService.failTypes,
         selectedStage: result.selectedStage,
         selectedRank: result.selectedRank,
-        deaths: result.deaths,
+        selectedType: result.selectedType,
+        failCounts: result.counts,
+        fails: result.fails,
       };
     }
 

@@ -13,7 +13,7 @@
       integrity="sha256-rFoyAIn+rtUKyWRsd6hDbzlnJmklIRroszMxG/mjxeY="
       crossorigin="anonymous"
     />
-    {{#if (or (eq view "dragonrace") (eq view "history") (eq view "deaths"))}}
+    {{#if (or (eq view "dragonrace") (eq view "history") (eq view "fails"))}}
       <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css"
@@ -54,7 +54,7 @@
       |
       <a class='{{navActive view "history"}}' href="/?view=history">History</a>
       |
-      <a class='{{navActive view "deaths"}}' href="/?view=deaths">Deaths</a>
+      <a class='{{navActive view "fails"}}' href="/?view=fails">Fails</a>
       |
       <a class='{{navActive view "splits"}}' href="/?view=splits">Splits</a>
       |
@@ -218,9 +218,30 @@
       {{/if}}
     {{/if}}
 
-    {{#if (eq view "deaths")}}
-      <form class="deaths-filters" action="/" method="get">
-        <input type="hidden" name="view" value="deaths" />
+    {{#if (eq view "fails")}}
+      <form class="fails-filters" action="/" method="get">
+        <input type="hidden" name="view" value="fails" />
+        <label for="type">Fail type:</label>
+        <select id="type" name="type">
+          <option
+            value="all"
+            {{#if (eq selectedType "all")}}
+              selected
+            {{/if}}
+          >
+            All types
+          </option>
+          {{#each failTypes}}
+            <option
+              value="{{ value }}"
+              {{#if (eq ../selectedType value)}}
+                selected
+              {{/if}}
+            >
+              {{ label }}
+            </option>
+          {{/each}}
+        </select>
         <label for="stage">World stage:</label>
         <select id="stage" name="stage">
           <option
@@ -275,28 +296,21 @@
         <button type="submit">Filter</button>
       </form>
 
-      <p>
-        {{ deaths.length }}
-        {{#if (eq deaths.length 1)}}
-          death
-        {{else}}
-          deaths
-        {{/if}}
-        found.
-      </p>
+      <p>Deaths: {{ failCounts.death }}; forfeits: {{ failCounts.forfeit }}; resets: {{ failCounts.reset }}; draw votes: {{ failCounts.draw_vote }}.</p>
 
-      {{#if deaths.length}}
+      {{#if fails.length}}
         <table class="sortable">
           <thead>
             <tr style="position: sticky; top: 0; background-color: #f9f9f9;">
               <th>Player</th>
               <th data-sort-method="number">Rank / Elo</th>
+              <th>Type</th>
               <th>Stage</th>
               <th aria-sort="descending">VOD Timestamp</th>
             </tr>
           </thead>
           <tbody>
-            {{#each deaths}}
+            {{#each fails}}
               <tr>
                 <td>
                   <a href="?user={{ player }}">
@@ -318,6 +332,7 @@
                     ({{ elo }})
                   {{/unless}}
                 </td>
+                <td>{{ typeLabel }}</td>
                 <td>{{ stageLabel }}</td>
                 <td data-sort="{{ eventUnix }}">
                   <a href="{{ vodLink }}" rel="noreferrer" target="_blank">{{ date }}</a>
@@ -327,7 +342,7 @@
           </tbody>
         </table>
       {{else}}
-        <p>No cached VOD deaths found for this stage.</p>
+        <p>No cached VOD fails found for these filters.</p>
       {{/if}}
     {{/if}}
 
@@ -348,7 +363,7 @@
       </table>
     {{/if}}
 
-    {{#if (or (eq view "dragonrace") (eq view "history") (eq view "deaths"))}}
+    {{#if (or (eq view "dragonrace") (eq view "history") (eq view "fails"))}}
       <script
         src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable.min.js"
         integrity="sha256-qIfPQq1baWczZMUpr+hQCzHfvj54wuYjvuZDD8abmQ8="

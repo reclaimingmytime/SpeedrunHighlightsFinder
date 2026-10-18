@@ -121,7 +121,7 @@ export class VodService {
       ),
     );
 
-    const forfeitHighlight = this.getForfeitHighlightWithoutDeath(
+    const forfeitHighlights = this.getForfeitHighlightWithoutDeath(
       match,
       deathTimelines,
       vodByPlayerUuid,
@@ -129,9 +129,7 @@ export class VodService {
       validatedUser,
       includeOpponent,
     );
-    if (forfeitHighlight) {
-      vods.push(forfeitHighlight);
-    }
+    vods.push(...forfeitHighlights);
 
     return vods;
   }
@@ -163,26 +161,26 @@ export class VodService {
     uuidToNickname: Map<string, string>,
     validatedUser?: string,
     includeOpponent?: boolean,
-  ): DeathEvent | null {
+  ): DeathEvent[] {
     if (!match.forfeited) {
-      return null;
+      return [];
     }
 
-    const forfeitingPlayerUuid = match.players.find((player) => player.uuid !== match.result.uuid)?.uuid;
-    if (
-      !forfeitingPlayerUuid ||
-      deathTimelines.some((timeline) => timeline.uuid === forfeitingPlayerUuid && timeline.time <= match.result.time) ||
-      !this.isRequestedPlayer(uuidToNickname.get(forfeitingPlayerUuid), validatedUser, includeOpponent)
-    ) {
-      return null;
-    }
+    const isDraw = match.result.uuid === null;
+    const candidatePlayers = isDraw
+      ? match.players
+      : match.players.filter((player) => player.uuid !== match.result.uuid).slice(0, 1);
 
-    return this.buildDeathVod(
-      match,
-      { uuid: forfeitingPlayerUuid, time: match.result.time },
-      vodByPlayerUuid,
-      uuidToNickname,
-    );
+    return candidatePlayers
+      .filter(
+        (player) =>
+          !deathTimelines.some((timeline) => timeline.uuid === player.uuid && timeline.time <= match.result.time) &&
+          this.isRequestedPlayer(uuidToNickname.get(player.uuid), validatedUser, includeOpponent),
+      )
+      .map((player) =>
+        this.buildDeathVod(match, { uuid: player.uuid, time: match.result.time }, vodByPlayerUuid, uuidToNickname),
+      )
+      .filter((highlight): highlight is DeathEvent => highlight !== null);
   }
 
   private isRequestedPlayer(nickname?: string, validatedUser?: string, includeOpponent?: boolean): boolean {
