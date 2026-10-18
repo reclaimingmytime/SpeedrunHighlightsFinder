@@ -103,20 +103,90 @@ export class VodService {
     }
 
     const deathTimelines = match.timelines.filter((timeline) => timeline.type === 'projectelo.timeline.death');
-
-    if (deathTimelines.length === 0) {
-      return [];
-    }
-
     const uuidToNickname = new Map(match.players.map((player) => [player.uuid, player.nickname]));
-
     const vodByPlayerUuid = new Map(match.vod.map((vod) => [vod.uuid, vod]));
-
     const filteredEvents = this.filterEventsForUser(deathTimelines, uuidToNickname, validatedUser, includeOpponent);
-
-    return filteredEvents
+    const vods = filteredEvents
       .map((event) => this.buildDeathVod(match, event, vodByPlayerUuid, uuidToNickname))
       .filter((result): result is DeathEvent => result !== null);
+
+    vods.push(
+      ...this.getResetHighlightsWithoutDeath(
+        match,
+        deathTimelines,
+        vodByPlayerUuid,
+        uuidToNickname,
+        validatedUser,
+        includeOpponent,
+      ),
+    );
+
+    const forfeitHighlight = this.getForfeitHighlightWithoutDeath(
+      match,
+      deathTimelines,
+      vodByPlayerUuid,
+      uuidToNickname,
+      validatedUser,
+      includeOpponent,
+    );
+    if (forfeitHighlight) {
+      vods.push(forfeitHighlight);
+    }
+
+    return vods;
+  }
+
+  private getResetHighlightsWithoutDeath(
+    match: MatchData,
+    deathTimelines: MatchData['timelines'],
+    vodByPlayerUuid: Map<string, MatchData['vod'][number]>,
+    uuidToNickname: Map<string, string>,
+    validatedUser?: string,
+    includeOpponent?: boolean,
+  ): DeathEvent[] {
+    const resetTimelines = match.timelines.filter((timeline) => timeline.type === 'projectelo.timeline.reset');
+
+    return resetTimelines
+      .filter(
+        (reset) =>
+          !deathTimelines.some((timeline) => timeline.uuid === reset.uuid && timeline.time <= reset.time) &&
+          this.isRequestedPlayer(uuidToNickname.get(reset.uuid), validatedUser, includeOpponent),
+      )
+      .map((reset) => this.buildDeathVod(match, reset, vodByPlayerUuid, uuidToNickname))
+      .filter((highlight): highlight is DeathEvent => highlight !== null);
+  }
+
+  private getForfeitHighlightWithoutDeath(
+    match: MatchData,
+    deathTimelines: MatchData['timelines'],
+    vodByPlayerUuid: Map<string, MatchData['vod'][number]>,
+    uuidToNickname: Map<string, string>,
+    validatedUser?: string,
+    includeOpponent?: boolean,
+  ): DeathEvent | null {
+    if (!match.forfeited) {
+      return null;
+    }
+
+    const forfeitingPlayerUuid = match.players.find((player) => player.uuid !== match.result.uuid)?.uuid;
+    if (
+      !forfeitingPlayerUuid ||
+      deathTimelines.some((timeline) => timeline.uuid === forfeitingPlayerUuid && timeline.time <= match.result.time) ||
+      !this.isRequestedPlayer(uuidToNickname.get(forfeitingPlayerUuid), validatedUser, includeOpponent)
+    ) {
+      return null;
+    }
+
+    return this.buildDeathVod(
+      match,
+      { uuid: forfeitingPlayerUuid, time: match.result.time },
+      vodByPlayerUuid,
+      uuidToNickname,
+    );
+  }
+
+  private isRequestedPlayer(nickname?: string, validatedUser?: string, includeOpponent?: boolean): boolean {
+    return includeOpponent || !validatedUser || nickname?.toLowerCase() === validatedUser.toLowerCase();
   }
 
   private filterEventsForUser(
