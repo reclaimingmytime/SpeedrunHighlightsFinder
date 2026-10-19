@@ -4,6 +4,7 @@ import { Request } from 'express';
 import { FailsService } from './services/fails.service';
 import { DragonRaceService } from './services/dragon-race.service';
 import { PlayerService } from './services/player.service';
+import { OpponentForfeitService } from './services/opponent-forfeit.service';
 import { SplitsService } from './services/splits.service';
 import { VodService } from './services/vod.service';
 
@@ -13,6 +14,7 @@ export class AppController {
     private readonly vodService: VodService,
     private readonly playerService: PlayerService,
     private readonly dragonRaceService: DragonRaceService,
+    private readonly opponentForfeitService: OpponentForfeitService,
     private readonly failsService: FailsService,
     private readonly splitsService: SplitsService,
   ) {}
@@ -42,6 +44,16 @@ export class AppController {
       return {
         view,
         dragonRaceConditions: conditions,
+      };
+    }
+
+    if (view === 'forfeits') {
+      const result = await this.opponentForfeitService.getOpponentForfeits(stage);
+      return {
+        view,
+        stages: this.opponentForfeitService.stages,
+        selectedStage: result.selectedStage,
+        opponentForfeits: result.opponentForfeits,
       };
     }
 

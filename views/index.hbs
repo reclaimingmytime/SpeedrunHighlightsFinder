@@ -13,7 +13,7 @@
       integrity="sha256-rFoyAIn+rtUKyWRsd6hDbzlnJmklIRroszMxG/mjxeY="
       crossorigin="anonymous"
     />
-    {{#if (or (eq view "dragonrace") (eq view "history") (eq view "fails"))}}
+    {{#if (or (eq view "dragonrace") (eq view "forfeits") (eq view "history") (eq view "fails"))}}
       <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css"
@@ -56,9 +56,11 @@
       |
       <a class='{{navActive view "fails"}}' href="/?view=fails">Fails</a>
       |
-      <a class='{{navActive view "splits"}}' href="/?view=splits">Splits</a>
-      |
       <a class='{{navActive view "dragonrace"}}' href="/?view=dragonrace">Dragon Race</a>
+      |
+      <a class='{{navActive view "forfeits"}}' href="/?view=forfeits">Opponent Forfeits</a>
+      |
+      <a class='{{navActive view "splits"}}' href="/?view=splits">Splits</a>
     </div>
 
     {{#if (eq view "latest")}}
@@ -175,7 +177,7 @@
     {{/if}}
 
     {{#if (eq view "dragonrace")}}
-      <p>All dragon perch races where both players killed the dragon in previously accessed matches.</p>
+      <p>Dragon perch races where both players killed the dragon in previously accessed matches.</p>
 
       {{#if dragonRaceConditions.length}}
         <table class="sortable">
@@ -215,6 +217,73 @@
         </table>
       {{else}}
         <p>No cached dragon race conditions found.</p>
+      {{/if}}
+    {{/if}}
+
+    {{#if (eq view "forfeits")}}
+      <form class="fails-filters" action="/" method="get">
+        <input type="hidden" name="view" value="forfeits" />
+        <label for="stage">World stage:</label>
+        <select id="stage" name="stage">
+          <option
+            value="all"
+            {{#if (eq selectedStage "all")}}
+              selected
+            {{/if}}
+          >
+            All stages
+          </option>
+          {{#each stages}}
+            <option
+              value="{{ value }}"
+              {{#if (eq ../selectedStage value)}}
+                selected
+              {{/if}}
+            >
+              {{ label }}
+            </option>
+          {{/each}}
+        </select>
+        <button type="submit">Filter</button>
+      </form>
+
+      {{#if opponentForfeits.length}}
+        <table class="sortable">
+          <thead>
+            <tr style="position: sticky; top: 0; background-color: #f9f9f9;">
+              <th>Player</th>
+              <th>World Stage</th>
+              <th>Forfeit Time</th>
+              <th aria-sort="descending">Date &amp; Time</th>
+              <th class="no-sort">VOD</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each opponentForfeits}}
+              <tr>
+                <td>
+                  <a href="?user={{ player }}">
+                    <img
+                      class="avatar"
+                      src="https://mineskin.eu/avatar/{{ player }}/8.svg"
+                      style="padding-right: 4px"
+                      alt="Player Avatar"
+                    />
+                    {{ player }}
+                  </a>
+                </td>
+                <td>{{ stageLabel }}</td>
+                <td data-sort="{{ forfeitTimeSeconds }}">{{ forfeitTime }}</td>
+                <td data-sort="{{ eventUnix }}">{{ date }}</td>
+                <td>
+                  <a href="{{ vodLink }}" rel="noreferrer" target="_blank">Watch</a>
+                </td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      {{else}}
+        <p>No cached opponent forfeits found.</p>
       {{/if}}
     {{/if}}
 
@@ -363,7 +432,7 @@
       </table>
     {{/if}}
 
-    {{#if (or (eq view "dragonrace") (eq view "history") (eq view "fails"))}}
+    {{#if (or (eq view "dragonrace") (eq view "forfeits") (eq view "history") (eq view "fails"))}}
       <script
         src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable.min.js"
         integrity="sha256-qIfPQq1baWczZMUpr+hQCzHfvj54wuYjvuZDD8abmQ8="

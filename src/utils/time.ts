@@ -1,5 +1,11 @@
 import type { MatchData } from '../types';
 
+export function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}m ${String(remainingSeconds).padStart(2, '0')}s`;
+}
+
 export function getVodEventTime(match: MatchData, eventTime: number, vodStart: number) {
   const gameStartUnix = match.date - match.result.time / 1000;
   const eventAbsoluteUnix = gameStartUnix + eventTime / 1000;

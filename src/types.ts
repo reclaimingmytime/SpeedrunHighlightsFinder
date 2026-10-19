@@ -24,6 +24,16 @@ export type DragonRaceCondition = {
   date: string;
   eventUnix: number;
 };
+export type OpponentForfeit = {
+  player: string;
+  stage: DeathStage;
+  stageLabel: string;
+  forfeitTime: string;
+  forfeitTimeSeconds: number;
+  vodLink: string;
+  date: string;
+  eventUnix: number;
+};
 
 export type DeathStage =
   'overworld' | 'entered nether' | 'bastion' | 'fortress' | 'finding stronghold' | 'stronghold' | 'end';

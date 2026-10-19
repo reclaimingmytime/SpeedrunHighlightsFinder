@@ -5,7 +5,7 @@ import { getAllCachedMatchIds } from '../utils/cache';
 import { getLatestEloByPlayer, groupTimelinesByUuid } from '../utils/match';
 import { PROGRESSION_EVENTS, STAGE_NAMES } from '../utils/progression';
 import { getRankFromElo } from '../utils/ranking';
-import { getVodEventTime } from '../utils/time';
+import { formatDuration, getVodEventTime } from '../utils/time';
 import { MatchService } from './match.service';
 
 export type CachedSplit = {
@@ -44,12 +44,6 @@ type SplitDataset = {
 const SPLIT_SORT_COLUMNS = ['player', 'rank', 'split', 'seedType', 'duration', 'date'] as const;
 type SplitSortColumn = (typeof SPLIT_SORT_COLUMNS)[number];
 type ColumnSearch = { value: string; logic: string; selectedValues: string[] };
-
-function formatDuration(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}m ${String(remainingSeconds).padStart(2, '0')}s`;
-}
 
 @Injectable()
 export class SplitsService {
