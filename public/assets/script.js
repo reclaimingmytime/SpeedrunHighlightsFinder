@@ -157,12 +157,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let state = null;
 
+  function updateLatestGroupsToggle() {
+    const toggleButton = document.getElementById('toggleLatestHistoryGroups');
+    const groups = document.querySelectorAll('#latestMatchesContainer .player-group');
+    if (!toggleButton) return;
+
+    toggleButton.hidden = groups.length === 0;
+    toggleButton.disabled = groups.length === 0;
+    toggleButton.textContent = Array.from(groups).every((group) => group.open) ? 'Collapse all' : 'Expand all';
+  }
+
+  const toggleLatestGroupsButton = document.getElementById('toggleLatestHistoryGroups');
+  if (toggleLatestGroupsButton) {
+    toggleLatestGroupsButton.addEventListener('click', () => {
+      const groups = document.querySelectorAll('#latestMatchesContainer .player-group');
+      const expand = Array.from(groups).some((group) => !group.open);
+      groups.forEach((group) => {
+        group.open = expand;
+      });
+      updateLatestGroupsToggle();
+    });
+  }
+
   function renderLatestMatches(vods, notFound = [], notPlayed = [], error, expiredMatchesMessage) {
     const container = document.getElementById('latestMatchesContainer');
     const statusDiv = document.getElementById('latestFromHistoryStatus');
     if (!container) return;
 
     container.innerHTML = '';
+    updateLatestGroupsToggle();
 
     // --- existing “not found / not played” blocks ---
     if (notFound.length > 0) {
@@ -224,6 +247,8 @@ document.addEventListener('DOMContentLoaded', () => {
     for (const group of sortedGroups) {
       const details = document.createElement('details');
       details.className = 'player-group';
+      details.open = true;
+      details.addEventListener('toggle', updateLatestGroupsToggle);
 
       const summary = document.createElement('summary');
 
@@ -285,6 +310,8 @@ document.addEventListener('DOMContentLoaded', () => {
       details.appendChild(body);
       container.appendChild(details);
     }
+
+    updateLatestGroupsToggle();
 
     if (statusDiv) {
       statusDiv.innerHTML = '';
