@@ -157,6 +157,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let state = null;
 
+  function normalizePlayerName(name) {
+    return name.toLowerCase();
+  }
+
   function updateLatestGroupsToggle() {
     const toggleButton = document.getElementById('toggleLatestHistoryGroups');
     const groups = document.querySelectorAll('#latestMatchesContainer .player-group');
@@ -234,10 +238,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     for (const vod of vods) {
       const key = vod.vodNickname || '(unknown)';
-      if (!groups.has(key)) {
-        groups.set(key, { nickname: key, vods: [] });
+      const normalizedName = normalizePlayerName(key);
+      if (!groups.has(normalizedName)) {
+        groups.set(normalizedName, { nickname: key, vods: [] });
       }
-      groups.get(key).vods.push(vod);
+      groups.get(normalizedName).vods.push(vod);
     }
 
     // Keep original order from API (already newest-first globally)
@@ -307,6 +312,29 @@ document.addEventListener('DOMContentLoaded', () => {
         body.appendChild(p);
       }
 
+      const normalizedName = normalizePlayerName(group.nickname);
+      const before = state?.pagination?.get(normalizedName);
+      if (before != null) {
+        const olderLink = document.createElement('a');
+        olderLink.href = '#';
+        olderLink.textContent = 'More';
+        olderLink.setAttribute('aria-label', `Load older highlights for ${group.nickname}`);
+        olderLink.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          fetchOlderHistoryPage(group.nickname);
+        });
+        body.appendChild(olderLink);
+
+        const pageError = state.pageErrors.get(normalizedName);
+        if (pageError) {
+          const errorMessage = document.createElement('p');
+          errorMessage.style.color = 'red';
+          errorMessage.textContent = pageError;
+          body.appendChild(errorMessage);
+        }
+      }
+
       details.appendChild(body);
       container.appendChild(details);
     }
@@ -315,6 +343,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (statusDiv) {
       statusDiv.innerHTML = '';
+    }
+  }
+
+  async function fetchOlderHistoryPage(player) {
+    if (!state) return;
+
+    const normalizedName = normalizePlayerName(player);
+    const before = state.pagination.get(normalizedName);
+    if (before == null || state.loadingPlayers.has(normalizedName)) return;
+
+    state.loadingPlayers.add(normalizedName);
+    state.pageErrors.delete(normalizedName);
+    renderLatestMatches(state.allVods, state.notFound, state.notPlayed, undefined, state.expiredMatchesMessage);
+
+    try {
+      const params = new URLSearchParams({
+        players: player,
+        before: String(before),
+      });
+      if (state.season !== undefined) params.set('season', String(state.season));
+
+      const res = await fetch('/api/latest?' + params.toString());
+      if (!res.ok) {
+        throw new Error('Could not fetch older highlights. An unexpected error occurred.');
+      }
+
+      const json = await res.json();
+      const updatedVods = state.allVods
+        .concat(json.vods || [])
+        .sort((a, b) => (b.eventUnix || 0) - (a.eventUnix || 0));
+      const seenLinks = new Set();
+      state.allVods = updatedVods.filter((vod) => {
+        if (seenLinks.has(vod.vodLink)) return false;
+        seenLinks.add(vod.vodLink);
+        return true;
+      });
+
+      const nextPage = (json.pagination || []).find(
+        (page) => normalizePlayerName(page.player) === normalizedName,
+      );
+      state.pagination.set(normalizedName, nextPage?.before);
+      state.expiredMatchesMessage ||= json.expiredMatchesMessage;
+    } catch (err) {
+      state.pageErrors.set(normalizedName, 'Could not fetch older highlights. Check the browser console for more info.');
+      console.error(err);
+    } finally {
+      state.loadingPlayers.delete(normalizedName);
+      renderLatestMatches(state.allVods, state.notFound, state.notPlayed, undefined, state.expiredMatchesMessage);
     }
   }
 
@@ -327,6 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const entries = Object.entries(history).map(([key, value]) => ({ key, ...value }));
 
       if (entries.length === 0) {
+        state = null;
         renderLatestMatches([], []);
         return;
       }
@@ -342,6 +419,9 @@ document.addEventListener('DOMContentLoaded', () => {
         season: season,
         history: entries,
         notFound: [],
+        pagination: new Map(),
+        loadingPlayers: new Set(),
+        pageErrors: new Map(),
       };
     }
 
@@ -367,6 +447,9 @@ document.addEventListener('DOMContentLoaded', () => {
       state.allVods = json.vods || [];
       state.notFound = json.notFound || [];
       state.notPlayed = json.notPlayed || [];
+      state.pagination = new Map(
+        (json.pagination || []).map((page) => [normalizePlayerName(page.player), page.before]),
+      );
       state.expiredMatchesMessage = json.expiredMatchesMessage;
     } catch (err) {
       renderLatestMatches([], [], [], 'An internal error occurred. Check the browser console for more info.');

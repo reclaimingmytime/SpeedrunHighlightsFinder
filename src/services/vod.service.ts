@@ -34,15 +34,16 @@ export class VodService {
     };
   }
 
-  async getVodsForPlayers(playersInput?: string, season?: number, includeOpponent?: boolean) {
+  async getVodsForPlayers(playersInput?: string, season?: number, includeOpponent?: boolean, before?: number) {
     const players = parseAndValidatePlayers(playersInput);
 
-    const results = await this.getVodsForPlayersConcurrently(players, season, includeOpponent);
+    const results = await this.getVodsForPlayersConcurrently(players, season, includeOpponent, before);
 
     const allVods: DeathEvent[] = [];
     const seen = new Set<string>();
     const notFound: string[] = [];
     const notPlayed: string[] = [];
+    const pagination: { player: string; before: number | undefined }[] = [];
     let expiredMatchesFound = false;
 
     for (let i = 0; i < results.length; i++) {
@@ -51,6 +52,7 @@ export class VodService {
 
       if (result.status === 'fulfilled') {
         const { resp } = result.value;
+        pagination.push({ player, before: resp.lastMatchId });
         expiredMatchesFound ||= Boolean(resp.expiredMatchesMessage);
 
         if (!resp.lastMatchId) {
@@ -78,17 +80,23 @@ export class VodService {
       allVods,
       notFound,
       notPlayed,
+      pagination,
       expiredMatchesMessage: expiredMatchesFound ? EXPIRED_MATCHES_MESSAGE : undefined,
     };
   }
 
-  private async getVodsForPlayersConcurrently(players: string[], season?: number, includeOpponent?: boolean) {
+  private async getVodsForPlayersConcurrently(
+    players: string[],
+    season?: number,
+    includeOpponent?: boolean,
+    before?: number,
+  ) {
     const limit = pLimit(10);
 
     return Promise.allSettled(
       players.map((player) =>
         limit(() =>
-          this.getVods(player, undefined, season, includeOpponent).then((resp) => ({
+          this.getVods(player, before, season, includeOpponent).then((resp) => ({
             player,
             resp,
           })),

@@ -101,13 +101,15 @@ export class AppController {
     @Query('players') players?: string,
     @Query('season') season?: number,
     @Query('includeOpponent') includeOpponent?: string,
+    @Query('before') before?: number,
   ) {
-    const response = await this.vodService.getVodsForPlayers(players, season, includeOpponent === 'true');
+    const response = await this.vodService.getVodsForPlayers(players, season, includeOpponent === 'true', before);
 
     return {
       vods: response.allVods,
       notFound: response.notFound,
       notPlayed: response.notPlayed,
+      pagination: response.pagination,
       expiredMatchesMessage: response.expiredMatchesMessage,
     };
   }
