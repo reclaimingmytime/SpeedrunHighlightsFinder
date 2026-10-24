@@ -333,6 +333,13 @@ document.addEventListener('DOMContentLoaded', () => {
           errorMessage.textContent = pageError;
           body.appendChild(errorMessage);
         }
+
+        const pageMessage = state.pageMessages.get(normalizedName);
+        if (pageMessage) {
+          const message = document.createElement('p');
+          message.textContent = pageMessage;
+          body.appendChild(message);
+        }
       }
 
       details.appendChild(body);
@@ -355,6 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     state.loadingPlayers.add(normalizedName);
     state.pageErrors.delete(normalizedName);
+    state.pageMessages.delete(normalizedName);
     renderLatestMatches(state.allVods, state.notFound, state.notPlayed, undefined, state.expiredMatchesMessage);
 
     try {
@@ -370,23 +378,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const json = await res.json();
-      const updatedVods = state.allVods
-        .concat(json.vods || [])
-        .sort((a, b) => (b.eventUnix || 0) - (a.eventUnix || 0));
+      const updatedVods = state.allVods.concat(json.vods || []).sort((a, b) => (b.eventUnix || 0) - (a.eventUnix || 0));
       const seenLinks = new Set();
       state.allVods = updatedVods.filter((vod) => {
         if (seenLinks.has(vod.vodLink)) return false;
         seenLinks.add(vod.vodLink);
         return true;
       });
+      if (!json.vods?.length) {
+        state.pageMessages.set(normalizedName, 'No highlights found on this page. Try the next page.');
+      }
 
-      const nextPage = (json.pagination || []).find(
-        (page) => normalizePlayerName(page.player) === normalizedName,
-      );
+      const nextPage = (json.pagination || []).find((page) => normalizePlayerName(page.player) === normalizedName);
       state.pagination.set(normalizedName, nextPage?.before);
       state.expiredMatchesMessage ||= json.expiredMatchesMessage;
     } catch (err) {
-      state.pageErrors.set(normalizedName, 'Could not fetch older highlights. Check the browser console for more info.');
+      state.pageErrors.set(
+        normalizedName,
+        'Could not fetch older highlights. Check the browser console for more info.',
+      );
       console.error(err);
     } finally {
       state.loadingPlayers.delete(normalizedName);
@@ -422,6 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pagination: new Map(),
         loadingPlayers: new Set(),
         pageErrors: new Map(),
+        pageMessages: new Map(),
       };
     }
 
