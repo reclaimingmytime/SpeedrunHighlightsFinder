@@ -188,6 +188,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusDiv = document.getElementById('latestFromHistoryStatus');
     if (!container) return;
 
+    const groupOpenStates = new Map(
+      Array.from(container.querySelectorAll('.player-group')).map((group) => [group.dataset.player, group.open]),
+    );
     container.innerHTML = '';
     updateLatestGroupsToggle();
 
@@ -252,7 +255,9 @@ document.addEventListener('DOMContentLoaded', () => {
     for (const group of sortedGroups) {
       const details = document.createElement('details');
       details.className = 'player-group';
-      details.open = true;
+      const normalizedName = normalizePlayerName(group.nickname);
+      details.dataset.player = normalizedName;
+      details.open = groupOpenStates.get(normalizedName) ?? true;
       details.addEventListener('toggle', updateLatestGroupsToggle);
 
       const summary = document.createElement('summary');
@@ -312,7 +317,6 @@ document.addEventListener('DOMContentLoaded', () => {
         body.appendChild(p);
       }
 
-      const normalizedName = normalizePlayerName(group.nickname);
       const before = state?.pagination?.get(normalizedName);
       if (before != null) {
         const olderLink = document.createElement('a');
