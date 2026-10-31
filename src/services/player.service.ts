@@ -33,42 +33,26 @@ export class PlayerService {
     for (const match of matches) {
       if (!match) continue;
 
-      // compute latest match date regardless of vod
+      const matchPlayers = Array.isArray(match.players) ? match.players : [];
+      const vods = Array.isArray(match.vod) ? match.vod : [];
+      let matchIso: string | undefined;
+
       for (const player of players) {
-        const matchPlayer = Array.isArray(match.players)
-          ? match.players.find((mp) => mp.nickname && mp.nickname.toLowerCase() === player.toLowerCase())
-          : undefined;
+        const matchPlayer = matchPlayers.find(
+          (matchPlayer) => matchPlayer.nickname && matchPlayer.nickname.toLowerCase() === player.toLowerCase(),
+        );
 
         if (!matchPlayer) continue;
 
-        const matchIso = new Date(match.date * 1000).toISOString();
+        matchIso ??= new Date(match.date * 1000).toISOString();
         const existingLatest = latestAll[player];
         if (!existingLatest || matchIso > existingLatest) {
           latestAll[player] = matchIso;
         }
-      }
 
-      // skip matches without vod for streamed results
-      if (!Array.isArray(match.vod) || match.vod.length === 0) continue;
-
-      for (const player of players) {
-        // Find the player object in this match (case-insensitive)
-        const matchPlayer = Array.isArray(match.players)
-          ? match.players.find((mp) => mp.nickname && mp.nickname.toLowerCase() === player.toLowerCase())
-          : undefined;
-
-        if (!matchPlayer) continue;
-
-        // Ensure there's a VOD entry for this specific player UUID
-        const vodForPlayer = Array.isArray(match.vod)
-          ? match.vod.find((v) => v && v.uuid === matchPlayer.uuid)
-          : undefined;
-
-        if (!vodForPlayer) continue;
+        if (!vods.some((vod) => vod && vod.uuid === matchPlayer.uuid)) continue;
 
         const existing = latestStreamed[player];
-        const matchIso = new Date(match.date * 1000).toISOString();
-
         if (!existing || matchIso > existing) {
           latestStreamed[player] = matchIso;
         }
