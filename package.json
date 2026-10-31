@@ -20,11 +20,11 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@nestjs/common": "^12.1.3",
-    "@nestjs/core": "^12.1.3",
-    "@nestjs/platform-express": "^12.1.3",
+    "@nestjs/common": "^12.3.2",
+    "@nestjs/core": "^12.3.2",
+    "@nestjs/platform-express": "^12.3.2",
     "cookie-parser": "^1.4.7",
-    "hbs": "^4.3.1",
+    "hbs": "^4.4.0",
     "p-limit": "^7.3.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
@@ -32,16 +32,16 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.7",
     "@eslint/js": "^10.0.1",
-    "@nestjs/cli": "^12.0.8",
-    "@nestjs/schematics": "^12.0.7",
-    "@nestjs/testing": "^12.1.3",
+    "@nestjs/cli": "^12.0.11",
+    "@nestjs/schematics": "^12.0.12",
+    "@nestjs/testing": "^12.3.2",
     "@poliklot/prettier-plugin-handlebars": "^0.4.1",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "@types/supertest": "^7.2.1",
-    "eslint": "^10.13.0",
+    "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.7",
     "globals": "^17.13.0",
@@ -54,7 +54,7 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.71.2"
+    "typescript-eslint": "^8.72.1"
   },
   "jest": {
     "moduleFileExtensions": [
