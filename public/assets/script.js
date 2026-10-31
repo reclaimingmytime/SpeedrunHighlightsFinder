@@ -476,7 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tableBody = document.getElementById('historyTableBody');
     const infoMessage = document.getElementById('historyInfoMessage');
     const historyTable = document.getElementById('historyTable');
-    const recalcBtn = document.getElementById('recalcLastPublicMatches');
+    const loadMatchDatesBtn = document.getElementById('loadLastMatchDates');
     if (!tableBody || !infoMessage) return;
 
     const history = loadHistory();
@@ -488,8 +488,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (clearButton) {
       clearButton.style.display = hasHistory ? '' : 'none';
     }
-    if (recalcBtn) {
-      recalcBtn.style.display = hasHistory ? '' : 'none';
+    if (loadMatchDatesBtn) {
+      loadMatchDatesBtn.style.display = hasHistory ? '' : 'none';
     }
 
     const entries = Object.entries(history).map(([key, value]) => ({ key, ...value }));
@@ -526,10 +526,12 @@ document.addEventListener('DOMContentLoaded', () => {
       searchedTd.setAttribute('data-sort', Number.isNaN(searchedAt) ? '' : String(searchedAt));
       tr.appendChild(searchedTd);
 
+      const notLoadedText = 'Match dates not loaded yet';
+
       // Last streamed match (initially empty)
       const publicTd = document.createElement('td');
       publicTd.textContent = '—';
-      publicTd.title = 'Not calculated yet';
+      publicTd.title = notLoadedText;
       publicTd.setAttribute('data-player-streamed', entry.user || '');
       publicTd.setAttribute('data-sort', '');
       tr.appendChild(publicTd);
@@ -537,6 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Latest match (placeholder)
       const latestTd = document.createElement('td');
       latestTd.textContent = '—';
+      latestTd.title = notLoadedText;
       latestTd.setAttribute('data-player-latest', entry.user || '');
       latestTd.setAttribute('data-sort', '');
       tr.appendChild(latestTd);
@@ -570,7 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Fetch last match dates from server and populate table
-  async function recalculateLastPublicMatches() {
+  async function reloadLastPublicMatches() {
     const players = getPlayersFromHistory();
     if (players.length === 0) return;
 
@@ -628,19 +631,19 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (err) {
       console.error(err);
-      alert('Error while recalculating last matches.');
+      alert('Error while reloading last matches.');
     }
   }
 
-  // Bind recalc button
-  const recalcBtn = document.getElementById('recalcLastPublicMatches');
-  if (recalcBtn) {
-    recalcBtn.addEventListener('click', () => {
-      recalcBtn.textContent = 'Calculating...';
-      recalcBtn.disabled = true;
-      recalculateLastPublicMatches().finally(() => {
-        recalcBtn.textContent = 'Re-calculate latest matches';
-        recalcBtn.disabled = false;
+  // Bind load button
+  const loadLastMatchesBtn = document.getElementById('loadLastMatchDates');
+  if (loadLastMatchesBtn) {
+    loadLastMatchesBtn.addEventListener('click', () => {
+      loadLastMatchesBtn.textContent = 'Loading...';
+      loadLastMatchesBtn.disabled = true;
+      reloadLastPublicMatches().finally(() => {
+        loadLastMatchesBtn.textContent = 'Re-load match dates';
+        loadLastMatchesBtn.disabled = false;
       });
     });
   }
