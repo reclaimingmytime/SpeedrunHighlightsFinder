@@ -51,12 +51,13 @@ export class MatchService {
     before?: number,
     season?: number,
   ): Promise<{ lastMatchId: number | undefined; matchIds: number[] }> {
-    const requestPath = `${user ? `users/${user}/matches` : 'matches'}?count=${user ? API_MAX_RESULTS_USER_PAGE : API_MAX_RESULTS}${before ? `&before=${before}` : ''}&excludeDecayed=true${season ? `&season=${season}` : ''}`;
+    const count = user ? API_MAX_RESULTS_USER_PAGE : API_MAX_RESULTS;
+    const requestPath = `${user ? `users/${user}/matches` : 'matches'}?count=${count}${before ? `&before=${before}` : ''}&excludeDecayed=true${season ? `&season=${season}` : ''}`;
     const matchesResponse = await makeApiRequest(requestPath);
 
     validateMatchIdResponse(matchesResponse);
 
-    const lastMatchId = matchesResponse[matchesResponse.length - 1]?.id;
+    const lastMatchId = matchesResponse.length === count ? matchesResponse[matchesResponse.length - 1]?.id : undefined;
     const matchIds = matchesResponse
       .filter((item) => Array.isArray(item.vod) && item.vod.length !== 0)
       .map((item) => item.id);
