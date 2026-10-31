@@ -15,6 +15,7 @@ import { getLatestEloByPlayer, groupTimelinesByUuid } from '../utils/match';
 import { formatStageLabel, PROGRESSION_EVENTS, STAGE_NAMES } from '../utils/progression';
 import { getRankFromElo, RANK_THRESHOLDS } from '../utils/ranking';
 import { getVodEventTime } from '../utils/time';
+import { parseStage } from '../utils/validation';
 import { MatchService } from './match.service';
 
 const FAIL_TYPE_LABELS: Record<FailType, string> = {
@@ -52,7 +53,7 @@ export class FailsService {
   constructor(private readonly matchService: MatchService) {}
 
   async getFails(stageInput?: string, rankInput?: string, typeInput?: string): Promise<FailsResult> {
-    const selectedStage = this.parseStage(stageInput);
+    const selectedStage = parseStage(stageInput);
     const selectedRank = this.parseRank(rankInput);
     const selectedType = this.parseType(typeInput);
     const matchIds = await getAllCachedMatchIds();
@@ -73,16 +74,6 @@ export class FailsService {
       counts,
       fails,
     };
-  }
-
-  private parseStage(stageInput?: string): DeathStage | undefined {
-    if (!stageInput || stageInput.toLowerCase() === 'all') return undefined;
-
-    const normalized = stageInput.toLowerCase().trim().replace(/[-_]+/g, ' ');
-    const stage = STAGE_NAMES.find((candidate) => candidate === normalized);
-    if (stage) return stage;
-
-    throw new BadRequestException(`Unknown stage. Choose from: all, ${STAGE_NAMES.join(', ')}`);
   }
 
   private parseRank(rankInput?: string): string | undefined {

@@ -1,5 +1,16 @@
 import { BadRequestException } from '@nestjs/common';
-import type { MatchData, BasicMatchData, ApiResponseData } from '../types';
+import type { ApiResponseData, BasicMatchData, DeathStage, MatchData } from '../types';
+import { STAGE_NAMES } from './progression';
+
+export function parseStage(stageInput?: string): DeathStage | undefined {
+  if (!stageInput || stageInput.toLowerCase() === 'all') return undefined;
+
+  const normalized = stageInput.toLowerCase().trim().replace(/[-_]+/g, ' ');
+  const stage = STAGE_NAMES.find((candidate) => candidate === normalized);
+  if (stage) return stage;
+
+  throw new BadRequestException(`Unknown stage. Choose from: all, ${STAGE_NAMES.join(', ')}`);
+}
 
 export function validateSeason(season?: unknown): number | undefined {
   if (season === undefined || season === '') return undefined;

@@ -1,9 +1,10 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import type { DeathStage, DeathStageOption, MatchData, OpponentForfeit } from '../types';
+import type { DeathStageOption, MatchData, OpponentForfeit } from '../types';
 import { getAllCachedMatchIds } from '../utils/cache';
 import { formatStageLabel, getStageAtTime, STAGE_NAMES } from '../utils/progression';
 import { formatDuration, getVodEventTime } from '../utils/time';
+import { parseStage } from '../utils/validation';
 import { MatchService } from './match.service';
 
 @Injectable()
@@ -19,7 +20,7 @@ export class OpponentForfeitService {
     selectedStage: string;
     opponentForfeits: OpponentForfeit[];
   }> {
-    const selectedStage = this.parseStage(stageInput);
+    const selectedStage = parseStage(stageInput);
     const matchIds = await getAllCachedMatchIds();
     const matches = await Promise.all(matchIds.map((id) => this.matchService.getCachedMatch(id)));
     const opponentForfeits = matches
@@ -76,15 +77,5 @@ export class OpponentForfeitService {
       date,
       eventUnix,
     };
-  }
-
-  private parseStage(stageInput?: string): DeathStage | undefined {
-    if (!stageInput || stageInput.toLowerCase() === 'all') return undefined;
-
-    const normalized = stageInput.toLowerCase().trim().replace(/[-_]+/g, ' ');
-    const stage = STAGE_NAMES.find((candidate) => candidate === normalized);
-    if (stage) return stage;
-
-    throw new BadRequestException(`Unknown stage. Choose from: all, ${STAGE_NAMES.join(', ')}`);
   }
 }
