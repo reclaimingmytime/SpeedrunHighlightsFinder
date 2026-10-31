@@ -18,7 +18,11 @@ export class VodService {
     const parsedBefore = validateBefore(before);
     const validatedUser = validateUsername(user);
 
-    const { lastMatchId, matchIds } = await this.matchService.getMatchIDs(validatedUser, parsedBefore, parsedSeason);
+    const { lastMatchId, hasMatches, matchIds } = await this.matchService.getMatchIDs(
+      validatedUser,
+      parsedBefore,
+      parsedSeason,
+    );
 
     const fetchedMatches = await Promise.all(matchIds.map((id) => this.matchService.getMatch(id)));
     const matches = fetchedMatches.filter((match): match is MatchData => match !== null);
@@ -29,6 +33,7 @@ export class VodService {
     return {
       allVods,
       lastMatchId,
+      hasMatches,
       parsedSeason,
       expiredMatchesMessage: expiredMatchCount ? EXPIRED_MATCHES_MESSAGE : undefined,
     };
@@ -53,7 +58,7 @@ export class VodService {
         const { resp } = result.value;
         pagination.push({ player, before: resp.lastMatchId });
 
-        if (!resp.lastMatchId) {
+        if (!resp.hasMatches) {
           notPlayed.push(player);
         }
 
