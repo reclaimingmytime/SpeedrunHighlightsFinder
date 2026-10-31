@@ -1,5 +1,6 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { getAppView } from '../utils/app-view';
 
 @Catch()
 export class RenderExceptionFilter implements ExceptionFilter {
@@ -10,6 +11,7 @@ export class RenderExceptionFilter implements ExceptionFilter {
 
     const render = (status: number, error: string) =>
       res.status(status).render('index', {
+        view: getAppView(req.query?.view),
         user: req.query?.user,
         vods: [],
         season: req.query?.season,

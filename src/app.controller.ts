@@ -1,6 +1,7 @@
 import { Controller, Get, Query, Render, Req } from '@nestjs/common';
 import { Request } from 'express';
 
+import { AppView } from './utils/app-view';
 import { FailsService } from './services/fails.service';
 import { DragonRaceService } from './services/dragon-race.service';
 import { PlayerService } from './services/player.service';
@@ -31,14 +32,14 @@ export class AppController {
     @Query('type') type?: string,
     @Req() req?: Request,
   ) {
-    if (view === 'history' || view === 'latestFromHistory') {
+    if (view === AppView.History || view === AppView.LatestFromHistory) {
       return {
         view,
         season,
       };
     }
 
-    if (view === 'dragonrace') {
+    if (view === AppView.DragonRace) {
       const conditions = await this.dragonRaceService.getDragonRaceConditions();
 
       return {
@@ -47,7 +48,7 @@ export class AppController {
       };
     }
 
-    if (view === 'forfeits') {
+    if (view === AppView.Forfeits) {
       const result = await this.opponentForfeitService.getOpponentForfeits(stage);
       return {
         view,
@@ -57,10 +58,10 @@ export class AppController {
       };
     }
 
-    if (view === 'fails' || view === 'deaths') {
+    if (view === AppView.Fails || view === AppView.Deaths) {
       const result = await this.failsService.getFails(stage, rank, type);
       return {
-        view: 'fails',
+        view: AppView.Fails,
         stages: this.failsService.stages,
         ranks: this.failsService.ranks,
         failTypes: this.failsService.failTypes,
@@ -72,7 +73,7 @@ export class AppController {
       };
     }
 
-    if (view === 'splits') {
+    if (view === AppView.Splits) {
       return { view };
     }
 
@@ -86,7 +87,7 @@ export class AppController {
     );
 
     return {
-      view: 'latest',
+      view: AppView.Latest,
       user: user ?? '',
       includeOpponent,
       vods: allVods,
