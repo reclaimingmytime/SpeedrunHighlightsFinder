@@ -44,7 +44,6 @@ export class VodService {
     const notFound: string[] = [];
     const notPlayed: string[] = [];
     const pagination: { player: string; before: number | undefined }[] = [];
-    let expiredMatchesFound = false;
 
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
@@ -53,7 +52,6 @@ export class VodService {
       if (result.status === 'fulfilled') {
         const { resp } = result.value;
         pagination.push({ player, before: resp.lastMatchId });
-        expiredMatchesFound ||= Boolean(resp.expiredMatchesMessage);
 
         if (!resp.lastMatchId) {
           notPlayed.push(player);
@@ -81,7 +79,6 @@ export class VodService {
       notFound,
       notPlayed,
       pagination,
-      expiredMatchesMessage: expiredMatchesFound ? EXPIRED_MATCHES_MESSAGE : undefined,
     };
   }
 

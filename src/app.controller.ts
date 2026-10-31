@@ -110,7 +110,6 @@ export class AppController {
       notFound: response.notFound,
       notPlayed: response.notPlayed,
       pagination: response.pagination,
-      expiredMatchesMessage: response.expiredMatchesMessage,
     };
   }
 
