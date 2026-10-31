@@ -58,7 +58,7 @@ export class AppController {
       };
     }
 
-    if (view === AppView.Fails || view === AppView.Deaths) {
+    if (view === AppView.Fails) {
       const result = await this.failsService.getFails(stage, rank, type);
       return {
         view: AppView.Fails,

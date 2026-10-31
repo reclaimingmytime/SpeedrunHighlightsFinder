@@ -5,7 +5,6 @@ export const AppView = {
   DragonRace: 'dragonrace',
   Forfeits: 'forfeits',
   Fails: 'fails',
-  Deaths: 'deaths',
   Splits: 'splits',
 } as const;
 
@@ -19,5 +18,5 @@ export function isAppView(value: unknown): value is AppView {
 
 export function getAppView(value: unknown): AppView {
   if (!isAppView(value)) return AppView.Latest;
-  return value === AppView.Deaths ? AppView.Fails : value;
+  return value;
 }
