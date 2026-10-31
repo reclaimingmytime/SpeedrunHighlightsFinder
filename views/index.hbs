@@ -37,18 +37,13 @@
     {{/if}}
 
     <link rel="stylesheet" href="/assets/style.css" />
-    <title>
-      {{#if user}}
-        {{ user }} -
-      {{/if}}
-      MCSR Ranked Highlights
-    </title>
+    <title>{{pageTitle view user}}</title>
   </head>
   <body>
     <h1>MCSR Ranked Highlights</h1>
 
     <div style="margin-bottom: 0.75rem;">
-      <a class='{{navActive view "latest"}}' href="/">Recent</a>
+      <a class='{{navActive view "latest"}}' href="/">Latest</a>
       |
       <a class='{{navActive view "latestFromHistory"}}' href="/?view=latestFromHistory">Latest from History</a>
       |

@@ -6,6 +6,7 @@ import { RenderExceptionFilter } from './filters/render-exception-filter';
 import cookieParser from 'cookie-parser';
 import hbs from 'hbs';
 import { removeExpiredCachedMatches } from './utils/cache';
+import { getPageTitle } from './utils/app-view';
 
 async function bootstrap() {
   await removeExpiredCachedMatches();
@@ -21,6 +22,8 @@ async function bootstrap() {
   });
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
   hbs.registerHelper('navActive', (view, targetView) => (view === targetView ? 'nav-active' : ''));
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+  hbs.registerHelper('pageTitle', (view, user) => getPageTitle(view, user));
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
   hbs.registerHelper('or', function (...args) {
     args.pop();
