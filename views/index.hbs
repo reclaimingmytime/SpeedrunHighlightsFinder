@@ -116,32 +116,39 @@
             <p>No highlights found.</p>
           {{/each}}
 
+          <hr />
           {{#if lastMatchId}}
-            <hr />
             <p>
-              {{#unless expiredMatchesMessage}}
-                <a
-                  href="?{{#if user}}user={{ user }}&amp;{{/if}}before={{ lastMatchId }}{{#if season}}&amp;season={{ season }}{{/if}}"
-                >
-                  Previous
-                </a>
-              {{/unless}}
-              {{#if user}}
-                {{#unless error}}
-                  {{#unless expiredMatchesMessage}}|{{/unless}}
-                  <a
-                    id="toggleOpponentClips"
-                    href="#"
-                    data-value="{{#if includeOpponent}}false{{else}}true{{/if}}"
-                  >
-                    {{#if includeOpponent}}
-                      Hide opponent clips
-                    {{else}}
-                      Include opponent
-                    {{/if}}
-                  </a>
-                {{/unless}}
+            {{#unless expiredMatchesMessage}}
+              <a
+                href="?{{#if user}}user={{ user }}&amp;{{/if}}before={{ lastMatchId }}{{#if season}}&amp;season={{ season }}{{/if}}"
+              >
+                Previous
+              </a>
+            {{/unless}}
+            {{#if before}}
+              |
+              <a
+                href="?{{#if user}}user={{ user }}&amp;{{/if}}{{#if season}}season={{ season }}{{/if}}"
+              >
+                Back to Latest
+              </a>
+            {{/if}}
+          {{/if}}
+
+          {{#if user}}
+            |
+            <a
+              id="toggleOpponentClips"
+              href="#"
+              data-value="{{#if includeOpponent}}false{{else}}true{{/if}}"
+            >
+              {{#if includeOpponent}}
+                Hide opponent clips
+              {{else}}
+                Include opponent
               {{/if}}
+            </a>
             </p>
           {{/if}}
         {{/if}}

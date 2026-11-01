@@ -89,6 +89,7 @@ export class AppController {
     return {
       view: AppView.Latest,
       user: user ?? '',
+      before,
       includeOpponent,
       vods: allVods,
       lastMatchId,
