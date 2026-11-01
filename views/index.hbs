@@ -126,14 +126,14 @@
                 Previous
               </a>
             {{/unless}}
-            {{#if before}}
-              |
-              <a
-                href="?{{#if user}}user={{ user }}&amp;{{/if}}{{#if season}}season={{ season }}{{/if}}"
-              >
-                Back to Latest
-              </a>
-            {{/if}}
+          {{/if}}
+          {{#if before}}
+            {{#if lastMatchId}}|{{/if}}
+            <a
+              href="?{{#if user}}user={{ user }}&amp;{{/if}}{{#if season}}season={{ season }}{{/if}}"
+            >
+              Back to Latest
+            </a>
           {{/if}}
 
           {{#if user}}
