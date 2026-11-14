@@ -15,7 +15,7 @@ export class MatchService {
     if (!match) return { match: null, expired: false };
     validateMatchDataResponse(match);
     if (isMatchOlderThanTwoMonths(match.date)) {
-      removeExpiredMatchCache(id, 'match lookup');
+      removeExpiredMatchCache(id, match.date, 'match lookup');
       return { match: null, expired: true };
     }
     return { match, expired: false };
@@ -30,7 +30,7 @@ export class MatchService {
     validateMatchDataResponse(response);
 
     if (isMatchOlderThanTwoMonths(response.date)) {
-      removeExpiredMatchCache(id, 'match lookup');
+      removeExpiredMatchCache(id, response.date, 'match lookup');
       return null;
     }
 

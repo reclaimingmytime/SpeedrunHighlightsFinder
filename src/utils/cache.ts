@@ -92,6 +92,7 @@ export async function migrateLegacyJsonCacheToSqlite(cacheDirectory = MATCH_CACH
 
 export function removeExpiredMatchCache(
   id: number,
+  matchDate: number,
   discoveredDuring: 'startup cleanup' | 'match lookup',
   cacheDirectory = MATCH_CACHE_DIRECTORY,
 ): void {
@@ -99,7 +100,9 @@ export function removeExpiredMatchCache(
 
   try {
     getDatabase().prepare('DELETE FROM cached_matches WHERE id = ?').run(id);
-    console.info(`Removed expired match cache during ${discoveredDuring}: match_${id}.json`);
+    console.info(
+      `Removed expired match cache during ${discoveredDuring}: match_${id} from ${new Date(matchDate * 1000).toISOString()}`,
+    );
   } catch (error) {
     if (!isErrnoWithCode(error, 'ENOENT')) throw error;
   }
@@ -133,7 +136,7 @@ export function removeExpiredCachedMatches(cacheDirectory = MATCH_CACHE_DIRECTOR
     try {
       const match = JSON.parse(row.payload) as { date?: number };
       if (!match || typeof match.date !== 'number' || !isMatchOlderThanTwoMonths(match.date, now)) continue;
-      removeExpiredMatchCache(row.id, 'startup cleanup');
+      removeExpiredMatchCache(row.id, match.date, 'startup cleanup');
     } catch {
       continue;
     }
