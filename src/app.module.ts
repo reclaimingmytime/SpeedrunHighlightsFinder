@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
+import { BackgroundMatchSyncService } from './services/background-match-sync.service';
 import { FailsService } from './services/fails.service';
 import { DragonRaceService } from './services/dragon-race.service';
 import { MatchService } from './services/match.service';
@@ -19,6 +20,7 @@ import { VodService } from './services/vod.service';
     OpponentForfeitService,
     FailsService,
     SplitsService,
+    BackgroundMatchSyncService,
   ],
 })
 export class AppModule {}
