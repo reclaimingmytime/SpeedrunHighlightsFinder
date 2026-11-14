@@ -52,12 +52,12 @@ export class FailsService {
 
   constructor(private readonly matchService: MatchService) {}
 
-  async getFails(stageInput?: string, rankInput?: string, typeInput?: string): Promise<FailsResult> {
+  getFails(stageInput?: string, rankInput?: string, typeInput?: string): FailsResult {
     const selectedStage = parseStage(stageInput);
     const selectedRank = this.parseRank(rankInput);
     const selectedType = this.parseType(typeInput);
-    const matchIds = await getAllCachedMatchIds();
-    const matches = await Promise.all(matchIds.map((id) => this.matchService.getCachedMatch(id)));
+    const matchIds = getAllCachedMatchIds();
+    const matches = matchIds.map((id) => this.matchService.getCachedMatch(id));
     const cachedMatches = matches.filter((match): match is MatchData => match !== null);
     const eloByPlayer = getLatestEloByPlayer(cachedMatches);
     const allFails = cachedMatches

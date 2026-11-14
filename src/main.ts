@@ -10,7 +10,7 @@ import { removeExpiredCachedMatches } from './utils/cache';
 import { getPageTitle } from './utils/app-view';
 
 async function bootstrap() {
-  await removeExpiredCachedMatches();
+  removeExpiredCachedMatches();
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 

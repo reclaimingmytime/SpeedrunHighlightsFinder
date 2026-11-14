@@ -40,7 +40,7 @@ export class AppController {
     }
 
     if (view === AppView.DragonRace) {
-      const conditions = await this.dragonRaceService.getDragonRaceConditions();
+      const conditions = this.dragonRaceService.getDragonRaceConditions();
 
       return {
         view,
@@ -49,7 +49,7 @@ export class AppController {
     }
 
     if (view === AppView.Forfeits) {
-      const result = await this.opponentForfeitService.getOpponentForfeits(stage);
+      const result = this.opponentForfeitService.getOpponentForfeits(stage);
       return {
         view,
         stages: this.opponentForfeitService.stages,
@@ -59,7 +59,7 @@ export class AppController {
     }
 
     if (view === AppView.Fails) {
-      const result = await this.failsService.getFails(stage, rank, type);
+      const result = this.failsService.getFails(stage, rank, type);
       return {
         view: AppView.Fails,
         stages: this.failsService.stages,
@@ -116,7 +116,7 @@ export class AppController {
   }
 
   @Get('api/lastPublicMatches')
-  async lastPublicMatches(@Query('players') players?: string) {
+  lastPublicMatches(@Query('players') players?: string) {
     return this.playerService.getLastPublicMatchesForPlayers(players);
   }
 

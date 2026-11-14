@@ -16,13 +16,13 @@ export class OpponentForfeitService {
 
   constructor(private readonly matchService: MatchService) {}
 
-  async getOpponentForfeits(stageInput?: string): Promise<{
+  getOpponentForfeits(stageInput?: string): {
     selectedStage: string;
     opponentForfeits: OpponentForfeit[];
-  }> {
+  } {
     const selectedStage = parseStage(stageInput);
-    const matchIds = await getAllCachedMatchIds();
-    const matches = await Promise.all(matchIds.map((id) => this.matchService.getCachedMatch(id)));
+    const matchIds = getAllCachedMatchIds();
+    const matches = matchIds.map((id) => this.matchService.getCachedMatch(id));
     const opponentForfeits = matches
       .filter((match): match is MatchData => match !== null)
       .map((match) => this.findOpponentForfeit(match))

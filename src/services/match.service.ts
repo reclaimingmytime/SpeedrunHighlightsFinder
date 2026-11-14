@@ -10,19 +10,19 @@ const API_MAX_RESULTS_USER_PAGE = 60;
 
 @Injectable()
 export class MatchService {
-  private async readCachedMatch(id: number): Promise<{ match: MatchData | null; expired: boolean }> {
-    const match = await getCached<MatchData>(`./cache/match_${id}.json`);
+  private readCachedMatch(id: number): { match: MatchData | null; expired: boolean } {
+    const match = getCached<MatchData>(`./cache/match_${id}.json`);
     if (!match) return { match: null, expired: false };
     validateMatchDataResponse(match);
     if (isMatchOlderThanTwoMonths(match.date)) {
-      await removeExpiredMatchCache(id, 'match lookup');
+      removeExpiredMatchCache(id, 'match lookup');
       return { match: null, expired: true };
     }
     return { match, expired: false };
   }
 
-  async getCachedMatch(id: number): Promise<MatchData | null> {
-    return (await this.readCachedMatch(id)).match;
+  getCachedMatch(id: number): MatchData | null {
+    return this.readCachedMatch(id).match;
   }
 
   async getLiveMatchAndCache(id: number): Promise<MatchData | null> {
@@ -30,7 +30,7 @@ export class MatchService {
     validateMatchDataResponse(response);
 
     if (isMatchOlderThanTwoMonths(response.date)) {
-      await removeExpiredMatchCache(id, 'match lookup');
+      removeExpiredMatchCache(id, 'match lookup');
       return null;
     }
 
@@ -39,7 +39,7 @@ export class MatchService {
   }
 
   async getMatch(id: number): Promise<MatchData | null> {
-    const cached = await this.readCachedMatch(id);
+    const cached = this.readCachedMatch(id);
     if (cached.expired) return null;
     if (cached.match) return cached.match;
 

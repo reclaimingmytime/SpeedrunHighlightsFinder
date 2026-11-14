@@ -9,13 +9,13 @@ import { MatchService } from './match.service';
 export class DragonRaceService {
   constructor(private readonly matchService: MatchService) {}
 
-  async getDragonRaceConditions() {
+  getDragonRaceConditions() {
     const conditions: DragonRaceCondition[] = [];
 
-    const matchIds = await getAllCachedMatchIds();
+    const matchIds = getAllCachedMatchIds();
 
     for (const id of matchIds) {
-      const match = await this.matchService.getCachedMatch(id);
+      const match = this.matchService.getCachedMatch(id);
 
       if (!match) {
         continue;

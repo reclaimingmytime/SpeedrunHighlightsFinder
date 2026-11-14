@@ -8,19 +8,19 @@ import { MatchService } from './match.service';
 export class PlayerService {
   constructor(private readonly matchService: MatchService) {}
 
-  async getLastPublicMatchesForPlayers(playersInput?: string): Promise<{
+  getLastPublicMatchesForPlayers(playersInput?: string): {
     latestStreamed: Record<string, string | null>;
     latestAll: Record<string, string | null>;
-  }> {
+  } {
     if (!playersInput) {
       throw new BadRequestException('Query "players" is required and must be comma-separated list of usernames.');
     }
 
     const players = parseAndValidatePlayers(playersInput);
 
-    const matchIds = await getAllCachedMatchIds();
+    const matchIds = getAllCachedMatchIds();
 
-    const matches = await Promise.all(matchIds.map((id) => this.matchService.getCachedMatch(id)));
+    const matches = matchIds.map((id) => this.matchService.getCachedMatch(id));
 
     const latestStreamed: Record<string, string | null> = {};
     const latestAll: Record<string, string | null> = {};

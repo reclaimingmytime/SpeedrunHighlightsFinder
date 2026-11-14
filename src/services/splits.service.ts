@@ -66,7 +66,7 @@ export class SplitsService {
       .toLocaleLowerCase();
     const columnSearches = SPLIT_SORT_COLUMNS.map((_, index) => this.getColumnSearch(query, index));
     const orders = this.parseOrders(query);
-    const matchIds = await getAllCachedMatchIds();
+    const matchIds = getAllCachedMatchIds();
     const { splits: allSplits, columnControl } = await this.getSplitDataset(matchIds);
     const hasSearch =
       Boolean(searchValue) ||
@@ -109,12 +109,12 @@ export class SplitsService {
     }
   }
 
-  private async buildSplitDataset(matchIds: number[]): Promise<SplitDataset> {
-    const matches = await Promise.all(matchIds.map((id) => this.matchService.getCachedMatch(id)));
+  private buildSplitDataset(matchIds: number[]): Promise<SplitDataset> {
+    const matches = matchIds.map((id) => this.matchService.getCachedMatch(id));
     const cachedMatches = matches.filter((match): match is MatchData => match !== null);
     const eloByPlayer = getLatestEloByPlayer(cachedMatches);
     const splits = cachedMatches.flatMap((match) => this.getMatchSplits(match, eloByPlayer));
-    return { splits, columnControl: this.getColumnControlOptions(splits) };
+    return Promise.resolve({ splits, columnControl: this.getColumnControlOptions(splits) });
   }
 
   private getColumnControlOptions(splits: CachedSplit[]): Record<string, { label: string; value: string }[]> {
