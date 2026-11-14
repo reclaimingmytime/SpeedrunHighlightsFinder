@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import type { Request, Response, NextFunction } from 'express';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { RenderExceptionFilter } from './filters/render-exception-filter';
@@ -32,6 +33,22 @@ async function bootstrap() {
 
   app.useGlobalFilters(new RenderExceptionFilter());
   app.use(cookieParser());
+
+  const username = process.env.BASIC_AUTH_USER ?? 'admin';
+  const password = process.env.BASIC_AUTH_PASSWORD;
+  if (password) {
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      const auth = req.headers.authorization;
+      const expected = 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
+
+      if (auth === expected) {
+        return next();
+      }
+
+      res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"');
+      res.status(401).send('Authentication required.');
+    });
+  }
 
   await app.listen(process.env.PORT ?? 3000);
 }
