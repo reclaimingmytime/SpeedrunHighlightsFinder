@@ -20,6 +20,7 @@ $ npm run start:dev
 # production mode
 $ npm run start:prod
 ```
+Note: You may need to run `npm run build` before running in production mode.
 
 ## Setup WebStorm
 Enable automatic Prettier integration (_Settings --> Languages & Frameworks --> JavaScript --> Prettier --> Automatic Prettier configuration_):
