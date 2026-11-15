@@ -2,7 +2,7 @@ export const AppView = {
   Latest: 'latest',
   LatestFromHistory: 'latestFromHistory',
   History: 'history',
-  DragonRace: 'dragonrace',
+  DragonRace: 'dragonRace',
   Forfeits: 'forfeits',
   Fails: 'fails',
   Splits: 'splits',
