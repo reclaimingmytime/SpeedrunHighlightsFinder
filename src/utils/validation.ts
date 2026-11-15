@@ -2,6 +2,22 @@ import { BadRequestException } from '@nestjs/common';
 import type { ApiResponseData, BasicMatchData, DeathStage, MatchData } from '../types';
 import { STAGE_NAMES } from './progression';
 
+//hard-coded for now (automate in the future by calling /leaderboard endpoint on startup, checking the season number and expiry date and storing it in an env var)
+export const MIN_SEASON = 12; // current season (or previous season if < 2 months since season change)
+export const MAX_SEASON = 13; // current season + 1
+
+export function validateSeason(season?: unknown): number | undefined {
+  if (season === undefined || season === '') return undefined;
+
+  const parsedSeason = Number(season);
+  if (Number.isNaN(parsedSeason) || parsedSeason < MIN_SEASON || parsedSeason > MAX_SEASON) {
+    throw new BadRequestException(
+      `Season must be a number greater than or equal to ${MIN_SEASON} and smaller than or equal to ${MAX_SEASON}.`,
+    );
+  }
+  return parsedSeason;
+}
+
 export function parseStage(stageInput?: string): DeathStage | undefined {
   if (!stageInput || stageInput.toLowerCase() === 'all') return undefined;
 
@@ -10,18 +26,6 @@ export function parseStage(stageInput?: string): DeathStage | undefined {
   if (stage) return stage;
 
   throw new BadRequestException(`Unknown stage. Choose from: all, ${STAGE_NAMES.join(', ')}`);
-}
-
-export function validateSeason(season?: unknown): number | undefined {
-  if (season === undefined || season === '') return undefined;
-
-  const parsed = Number(season);
-  if (Number.isNaN(parsed) || parsed < 9) {
-    throw new BadRequestException(
-      'Season must be a number greater than or equal to 9. The MCSR Ranked API does not include all VODs for earlier seasons, and those VODs will have expired by now anyway.',
-    );
-  }
-  return parsed;
 }
 
 export function validateBefore(before?: unknown): number | undefined {

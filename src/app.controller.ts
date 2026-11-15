@@ -8,6 +8,7 @@ import { PlayerService } from './services/player.service';
 import { OpponentForfeitService } from './services/opponent-forfeit.service';
 import { SplitsService } from './services/splits.service';
 import { VodService } from './services/vod.service';
+import { MAX_SEASON, MIN_SEASON } from './utils/validation';
 
 @Controller()
 export class AppController {
@@ -36,6 +37,8 @@ export class AppController {
       return {
         view,
         season,
+        minSeason: MIN_SEASON,
+        maxSeason: MAX_SEASON,
       };
     }
 
@@ -94,6 +97,8 @@ export class AppController {
       vods: allVods,
       lastMatchId,
       season: parsedSeason,
+      minSeason: MIN_SEASON,
+      maxSeason: MAX_SEASON,
       expiredMatchesMessage,
     };
   }

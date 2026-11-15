@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { getAppView } from '../utils/app-view';
+import { MAX_SEASON, MIN_SEASON } from '../utils/validation';
 
 @Catch()
 export class RenderExceptionFilter implements ExceptionFilter {
@@ -15,6 +16,8 @@ export class RenderExceptionFilter implements ExceptionFilter {
         user: req.query?.user,
         vods: [],
         season: req.query?.season,
+        minSeason: MIN_SEASON,
+        maxSeason: MAX_SEASON,
         lastMatchId: undefined,
         error,
       });
