@@ -1,5 +1,5 @@
 import { Controller, Get, Query, Render, Req } from '@nestjs/common';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 import { AppView } from './utils/app-view';
 import { FailsService } from './services/fails.service';
@@ -53,6 +53,7 @@ export class AppController {
 
     if (view === AppView.Forfeits) {
       const result = this.opponentForfeitService.getOpponentForfeits(stage);
+
       return {
         view,
         stages: this.opponentForfeitService.stages,
@@ -63,6 +64,7 @@ export class AppController {
 
     if (view === AppView.Fails) {
       const result = this.failsService.getFails(stage, rank, type);
+
       return {
         view: AppView.Fails,
         stages: this.failsService.stages,
@@ -77,6 +79,8 @@ export class AppController {
     }
 
     if (view === AppView.Splits) {
+      this.splitsService.ensureSplitsUpToDate();
+
       return { view };
     }
 
@@ -126,7 +130,8 @@ export class AppController {
   }
 
   @Get('api/splits')
-  async splits(@Req() req: Request) {
-    return this.splitsService.getDataTablePage(req.query);
+  splits(@Req() req: Request) {
+    // Intentionally read-only: sorting, paging and filtering must not rebuild cached_splits.
+    return this.splitsService.getDataTablePage(req.query as Record<string, unknown>);
   }
 }
