@@ -2,6 +2,16 @@ body {
   max-width: 48em;
 }
 
+p {
+  margin-bottom: 16px;
+}
+
+.avatar {
+  height: 18px;
+  display: inline;
+  margin-bottom: 0;
+}
+
 /* links */
 a:visited {
   color: #982c61;
@@ -12,6 +22,10 @@ a.nav-active {
   pointer-events: none;
   text-decoration: none;
   cursor: default;
+}
+
+.nav-links a {
+  margin-right: 0.6rem;
 }
 
 /* Tables */
@@ -53,16 +67,6 @@ td {
 #splitsTable_wrapper .dt-layout-row:first-child .dt-search input {
   margin: 0;
   display: inline-block;
-}
-
-p {
-  margin-bottom: 16px;
-}
-
-.avatar {
-  height: 18px;
-  display: inline;
-  margin-bottom: 0;
 }
 
 /* Player groups (Latest from History) */

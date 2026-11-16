@@ -42,19 +42,13 @@
   <body>
     <h1>MCSR Ranked Highlights</h1>
 
-    <div style="margin-bottom: 0.75rem;">
+    <div class="nav-links" style="margin-bottom: 0.75rem;">
       <a class='{{navActive view "latest"}}' href="/">Latest</a>
-      |
       <a class='{{navActive view "latestFromHistory"}}' href="/?view=latestFromHistory">Latest from History</a>
-      |
       <a class='{{navActive view "history"}}' href="/?view=history">History</a>
-      |
       <a class='{{navActive view "fails"}}' href="/?view=fails">Fails</a>
-      |
       <a class='{{navActive view "dragonRace"}}' href="/?view=dragonRace">Dragon Race</a>
-      |
       <a class='{{navActive view "forfeits"}}' href="/?view=forfeits">Opponent Forfeits</a>
-      |
       <a class='{{navActive view "splits"}}' href="/?view=splits">Splits</a>
     </div>
 
@@ -120,7 +114,7 @@
 
           <hr />
           {{#if lastMatchId}}
-            <p>
+            <p class="nav-links">
             {{#unless expiredMatchesMessage}}
               <a
                 href="?{{#if user}}user={{ user }}&amp;{{/if}}before={{ lastMatchId }}{{#if season}}&amp;season={{ season }}{{/if}}"
@@ -130,7 +124,6 @@
             {{/unless}}
           {{/if}}
           {{#if before}}
-            {{#if lastMatchId}}|{{/if}}
             <a
               href="?{{#if user}}user={{ user }}&amp;{{/if}}{{#if season}}season={{ season }}{{/if}}"
             >
@@ -139,7 +132,6 @@
           {{/if}}
 
           {{#if user}}
-            |
             <a
               id="toggleOpponentClips"
               href="#"
