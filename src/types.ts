@@ -57,6 +57,7 @@ export type CachedFail = {
   typeLabel: string;
   stage: DeathStage;
   stageLabel: string;
+  seedType: string;
   elo: number | null;
   rankName: string;
   rankIndex: number;
@@ -77,6 +78,8 @@ export type FailsResult = {
   selectedStage: string;
   selectedRank: string;
   selectedType: string;
+  selectedSeedType: string;
+  seedTypes: string[];
   counts: FailCounts;
   fails: CachedFail[];
 };

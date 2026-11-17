@@ -31,6 +31,7 @@ export class AppController {
     @Query('stage') stage?: string,
     @Query('rank') rank?: string,
     @Query('type') type?: string,
+    @Query('seedType') seedType?: string,
     @Req() req?: Request,
   ) {
     if (view === AppView.History || view === AppView.LatestFromHistory) {
@@ -63,7 +64,7 @@ export class AppController {
     }
 
     if (view === AppView.Fails) {
-      const result = this.failsService.getFails(stage, rank, type);
+      const result = this.failsService.getFails(stage, rank, type, seedType);
 
       return {
         view: AppView.Fails,
@@ -75,6 +76,8 @@ export class AppController {
         selectedType: result.selectedType,
         failCounts: result.counts,
         fails: result.fails,
+        seedTypes: result.seedTypes,
+        selectedSeedType: result.selectedSeedType,
       };
     }
 

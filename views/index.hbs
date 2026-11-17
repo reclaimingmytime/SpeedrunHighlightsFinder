@@ -329,37 +329,30 @@
             </option>
           {{/each}}
         </select>
-        <label for="rank">Rank:</label>
-        <select id="rank" name="rank">
-          <option
-            value="all"
-            {{#if (eq selectedRank "all")}}
-              selected
-            {{/if}}
-          >
-            All ranks
-          </option>
-          {{#each ranks}}
+        <div class="seed-filter-row">
+          <label for="seedType">Seed type:</label>
+          <select id="seedType" name="seedType">
             <option
-              value="{{ name }}"
-              {{#if (eq ../selectedRank name)}}
+              value="all"
+              {{#if (eq selectedSeedType "all")}}
                 selected
               {{/if}}
             >
-              {{ rankEmoji }}
-              {{ rankName }}
+              All seed types
             </option>
-          {{/each}}
-          <option
-            value="unranked"
-            {{#if (eq selectedRank "—")}}
-              selected
-            {{/if}}
-          >
-            Unranked
-          </option>
-        </select>
-        <button type="submit">Filter</button>
+            {{#each seedTypes}}
+              <option
+                value="{{ this }}"
+                {{#if (eq ../selectedSeedType this)}}
+                  selected
+                {{/if}}
+              >
+                {{ this }}
+              </option>
+            {{/each}}
+          </select>
+          <button type="submit">Filter</button>
+        </div>
       </form>
 
       <p>Deaths: {{ failCounts.death }}; forfeits: {{ failCounts.forfeit }}; resets: {{ failCounts.reset }}; draw votes: {{ failCounts.draw_vote }}.</p>
@@ -372,6 +365,7 @@
               <th data-sort-method="number">Rank / Elo</th>
               <th>Type</th>
               <th>Stage</th>
+              <th>Seed Type</th>
               <th aria-sort="descending">VOD Timestamp</th>
             </tr>
           </thead>
@@ -400,6 +394,7 @@
                 </td>
                 <td>{{ typeLabel }}</td>
                 <td>{{ stageLabel }}</td>
+                <td>{{ seedType }}</td>
                 <td data-sort="{{ eventUnix }}">
                   <a href="{{ vodLink }}" rel="noreferrer" target="_blank">{{ date }}</a>
                 </td>

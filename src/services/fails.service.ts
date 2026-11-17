@@ -59,10 +59,13 @@ export class FailsService {
     const matchIds = getAllCachedMatchIds();
     const matches = matchIds.map((id) => this.matchService.getCachedMatch(id));
     const cachedMatches = matches.filter((match): match is MatchData => match !== null);
+    const seedTypes = this.getSeedTypeOptions(cachedMatches);
+    const selectedSeedType = this.parseSeedType(seedTypeInput, seedTypes);
     const eloByPlayer = getLatestEloByPlayer(cachedMatches);
     const allFails = cachedMatches
       .flatMap((match) => this.getMatchFails(match, selectedStage, eloByPlayer))
       .filter((fail) => !selectedRank || fail.rankName === selectedRank)
+      .filter((fail) => !selectedSeedType || fail.seedType === selectedSeedType)
       .sort((a, b) => b.eventUnix - a.eventUnix);
     const counts = this.getFailCounts(allFails);
     const fails = allFails.filter((fail) => !selectedType || fail.type === selectedType);
@@ -71,6 +74,8 @@ export class FailsService {
       selectedStage: selectedStage ?? 'all',
       selectedRank: selectedRank ?? 'all',
       selectedType: selectedType ?? 'all',
+      selectedSeedType: selectedSeedType ?? 'all',
+      seedTypes,
       counts,
       fails,
     };
@@ -157,6 +162,7 @@ export class FailsService {
           typeLabel: FAIL_TYPE_LABELS[type],
           stage,
           stageLabel: formatStageLabel(stage),
+          seedType: match.seedType?.trim() || 'Unknown',
           elo,
           rankName,
           rankIndex,
@@ -169,5 +175,21 @@ export class FailsService {
     }
 
     return fails;
+  }
+
+  private getSeedTypeOptions(matches: MatchData[]): string[] {
+    const values = new Set(matches.map((match) => match.seedType?.trim() || 'Unknown'));
+    return [...values].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  }
+
+  private parseSeedType(seedTypeInput: string | undefined, seedTypes: string[]): string | undefined {
+    if (!seedTypeInput || seedTypeInput.toLowerCase() === 'all') return undefined;
+
+    const selected = seedTypeInput.trim();
+    for (const seedType of seedTypes) {
+      if (seedType === selected) return seedType;
+    }
+
+    throw new BadRequestException(`Unknown seed type. Choose from: all, ${seedTypes.join(', ')}`);
   }
 }
