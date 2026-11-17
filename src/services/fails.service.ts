@@ -52,7 +52,7 @@ export class FailsService {
 
   constructor(private readonly matchService: MatchService) {}
 
-  getFails(stageInput?: string, rankInput?: string, typeInput?: string): FailsResult {
+  getFails(stageInput?: string, rankInput?: string, typeInput?: string, seedTypeInput?: string): FailsResult {
     const selectedStage = parseStage(stageInput);
     const selectedRank = this.parseRank(rankInput);
     const selectedType = this.parseType(typeInput);
