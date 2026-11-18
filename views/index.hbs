@@ -13,7 +13,7 @@
       integrity="sha256-rFoyAIn+rtUKyWRsd6hDbzlnJmklIRroszMxG/mjxeY="
       crossorigin="anonymous"
     />
-    {{#if (or (eq view "dragonRace") (eq view "forfeits") (eq view "history") (eq view "fails"))}}
+    {{#if (or (eq view "dragon-race") (eq view "forfeits") (eq view "history") (eq view "fails"))}}
       <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable-base.min.css"
@@ -424,7 +424,7 @@
       </table>
     {{/if}}
 
-    {{#if (or (eq view "dragonRace") (eq view "forfeits") (eq view "history") (eq view "fails"))}}
+    {{#if (or (eq view "dragon-race") (eq view "forfeits") (eq view "history") (eq view "fails"))}}
       <script
         src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable@4.1.7/dist/sortable.min.js"
         integrity="sha256-qIfPQq1baWczZMUpr+hQCzHfvj54wuYjvuZDD8abmQ8="
