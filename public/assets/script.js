@@ -759,7 +759,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    if (viewParam === 'latestFromHistory') {
+    if (viewParam === 'latest-from-history') {
       fetchLatestFromHistory();
       return;
     }

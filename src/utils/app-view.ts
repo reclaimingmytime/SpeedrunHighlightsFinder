@@ -1,8 +1,8 @@
 export const AppView = {
   Latest: 'latest',
-  LatestFromHistory: 'latestFromHistory',
+  LatestFromHistory: 'latest-from-history',
   History: 'history',
-  DragonRace: 'dragonRace',
+  DragonRace: 'dragon-race',
   Forfeits: 'forfeits',
   Fails: 'fails',
   Splits: 'splits',
@@ -22,10 +22,7 @@ export function getAppView(value: unknown): AppView {
 }
 
 export function convertToTitleCase(value: string): string {
-  return value
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .replace(/[-_]+/g, ' ')
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return value.replace(/[-_]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export function getPageTitle(view: unknown, user: unknown): string {
