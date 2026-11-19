@@ -240,10 +240,8 @@ document.addEventListener('DOMContentLoaded', () => {
       groups.get(normalizedName).vods.push(vod);
     }
 
-    // Keep original order from API (already newest-first globally)
     const sortedGroups = Array.from(groups.values());
 
-    // ---------- Render groups ----------
     for (const group of sortedGroups) {
       const details = document.createElement('details');
       details.className = 'player-group';
@@ -254,16 +252,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const summary = document.createElement('summary');
 
-      // avatar + name (clickable → player page)
       const playerLink = createPlayerLink(group.nickname, {
         paddingRight: '4px',
         includeText: true,
       });
-      // prevent toggling the details when clicking the player link
       playerLink.addEventListener('click', (e) => e.stopPropagation());
       summary.appendChild(playerLink);
 
-      // count badge
       const countSpan = document.createElement('span');
       countSpan.className = 'count';
       countSpan.textContent = `· ${group.vods.length}`;
@@ -431,7 +426,6 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     }
 
-    // Players from the history entries we already loaded into state
     const players = state.history.map((e) => e.user).filter(Boolean);
     if (players.length === 0) {
       renderLatestMatches([], [], []);
@@ -509,17 +503,14 @@ document.addEventListener('DOMContentLoaded', () => {
     for (const entry of entries) {
       const tr = document.createElement('tr');
 
-      // Player cell
       const playerTd = document.createElement('td');
       playerTd.appendChild(createPlayerLink(entry.user, { includeText: true }));
       tr.appendChild(playerTd);
 
-      // Times accessed
       const countTd = document.createElement('td');
       countTd.textContent = String(entry.count || 0);
       tr.appendChild(countTd);
 
-      // Last searched
       const searchedTd = document.createElement('td');
       const searchedAt = Date.parse(entry.last);
       searchedTd.textContent = Number.isNaN(searchedAt) ? '—' : new Date(searchedAt).toLocaleString();
@@ -528,7 +519,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const notLoadedText = 'Match dates not loaded yet';
 
-      // Last streamed match (initially empty)
       const publicTd = document.createElement('td');
       publicTd.textContent = '—';
       publicTd.title = notLoadedText;
@@ -654,14 +644,106 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (viewParam === 'splits') {
       const splitsTable = document.getElementById('splitsTable');
+
       if (splitsTable && typeof window.DataTable === 'function') {
         const escapeHtml = (value) =>
           String(value).replace(/[&<>"']/g, (character) => {
-            const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+            const entities = {
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;',
+              '"': '&quot;',
+              "'": '&#39;',
+            };
             return entities[character];
           });
+
+        const filterContainer = document.createElement('div');
+        filterContainer.style.marginBottom = '1rem';
+
+        const filterLabel = document.createElement('label');
+        filterLabel.htmlFor = 'splitAnalysisFilter';
+        filterLabel.textContent = 'Split analysis: ';
+        filterLabel.style.marginRight = '0.5rem';
+
+        const filterSelect = document.createElement('select');
+        filterSelect.id = 'splitAnalysisFilter';
+
+        const filterDescription = document.createElement('p');
+        filterDescription.id = 'splitAnalysisDescription';
+        filterDescription.style.marginTop = '0.5rem';
+        filterDescription.style.marginBottom = '0';
+        filterDescription.style.fontSize = '0.9rem';
+        filterDescription.style.opacity = '0.8';
+
+        const filterOptions = [
+          ['all', 'All splits'],
+          ['sh_end_smallest', 'Possible portal-room spawn'],
+          ['fb_sh_smallest', 'Unusually fast stronghold arrival'],
+          ['ow_fortress', 'Fortress-first routes'],
+          ['ow_bastion', 'Early bastion access'],
+          ['bastion_fortress_smallest', 'Potential fastions'],
+        ];
+
+        const filterDescriptions = {
+          all: 'Browse all available splits.',
+          sh_end_smallest:
+            'Stronghold → End. Find runs with exceptionally short stronghold navigation times, which may indicate a portal room close to the stronghold entrance.',
+          fb_sh_smallest:
+            'Fortress/Bastion → Stronghold. Find unusually quick progression to the stronghold and investigate possible portal-room spawns.',
+          ow_fortress:
+            'Overworld / Nether entry → Fortress. Investigate fortress-first routes and runs where a fortress is found unusually early.',
+          ow_bastion:
+            'Overworld → Bastion. Investigate close bastion access and possible hoglin-related false positives.',
+          bastion_fortress_smallest:
+            'Bastion → Fortress. Find unusually close structure combinations that may indicate fastions. Some false positives are expected because travel time also depends on routing and movement.',
+        };
+
+        // Values that should end up checked in the Split column dropdown
+        const splitSelectionsByFilter = {
+          all: [],
+          sh_end_smallest: ['fortress -> finding stronghold'],
+          fb_sh_smallest: [],
+          ow_fortress: ['entered nether -> fortress', 'overworld -> fortress'],
+          ow_bastion: ['overworld -> bastion'],
+          bastion_fortress_smallest: ['bastion -> fortress'],
+        };
+
+        function normalizeSplitValue(value) {
+          return String(value)
+            .replace(/\s+/g, ' ')
+            .replace(/\s*->\s*/g, ' -> ')
+            .trim()
+            .toLowerCase();
+        }
+
+        for (const [value, label] of filterOptions) {
+          const option = document.createElement('option');
+          option.value = value;
+          option.textContent = label;
+          filterSelect.appendChild(option);
+        }
+
+        filterDescription.textContent = filterDescriptions[filterSelect.value];
+
+        filterContainer.appendChild(filterLabel);
+        filterContainer.appendChild(filterSelect);
+        filterContainer.appendChild(filterDescription);
+        splitsTable.parentElement.insertBefore(filterContainer, splitsTable);
+
+        // All "find short / early" analyses should sort ascending
+        const smallestDifferenceFilters = new Set([
+          'sh_end_smallest',
+          'fb_sh_smallest',
+          'ow_fortress',
+          'ow_bastion',
+          'bastion_fortress_smallest',
+        ]);
+
         const dataTable = new window.DataTable(splitsTable, {
-          ajax: '/api/splits',
+          ajax: {
+            url: '/api/splits',
+          },
           serverSide: true,
           processing: true,
           order: [[4, 'desc']],
@@ -684,7 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
               render: (rankName, type, row) =>
                 type !== 'display'
                   ? (row.elo ?? -1)
-                  : `${escapeHtml(row.rankEmoji)} ${escapeHtml(rankName)}${row.elo === null ? '' : ` (${row.elo})`}`,
+                  : `${escapeHtml(row.rankEmoji)} ${escapeHtml(rankName)}${row.elo === null ? '' : ` (${row.elo}`}`,
             },
             {
               data: 'split',
@@ -748,6 +830,119 @@ document.addEventListener('DOMContentLoaded', () => {
             bottomStart: 'info',
             bottomEnd: 'paging',
           },
+        });
+
+        // Hide the dropdown while we programmatically interact with it
+        const style = document.createElement('style');
+        style.textContent = `
+          body.dtcc-silent .dtcc-dropdown,
+          body.dtcc-silent .dtcc-list {
+            visibility: hidden !important;
+            pointer-events: none !important;
+            opacity: 0 !important;
+          }
+        `;
+        document.head.appendChild(style);
+
+        let applyingSplitFilter = false;
+
+        /**
+         * Walk the live ColumnControl DOM and click the correct option buttons.
+         * The dropdown is temporarily hidden so the user never sees it open/close.
+         */
+        function applySplitColumnFilter(filter) {
+          if (applyingSplitFilter) return;
+          applyingSplitFilter = true;
+
+          const desired = (splitSelectionsByFilter[filter] || []).map(normalizeSplitValue);
+
+          const splitHeader = document.querySelector('#splitsTable_wrapper .dt-scroll-head th[data-dt-column="2"]');
+          const dropdownButton = splitHeader?.querySelector('.dtcc-button_dropdown');
+
+          if (!dropdownButton) {
+            applyingSplitFilter = false;
+            return;
+          }
+
+          const wasOpen = dropdownButton.getAttribute('aria-expanded') === 'true';
+
+          // Hide before we open
+          document.body.classList.add('dtcc-silent');
+
+          const finish = () => {
+            document.body.classList.remove('dtcc-silent');
+            applyingSplitFilter = false;
+          };
+
+          try {
+            if (!wasOpen) {
+              dropdownButton.click();
+            }
+
+            setTimeout(() => {
+              try {
+                const list =
+                  document.querySelector('#splitsTable_wrapper .dtcc-list') || document.querySelector('.dtcc-list');
+
+                if (!list) {
+                  finish();
+                  return;
+                }
+
+                // Clear via the official Deselect control
+                const deselectBtn = list.querySelector('.dtcc-list-selectNone');
+                if (deselectBtn) {
+                  deselectBtn.click();
+                }
+
+                // Click the matching option buttons
+                const optionButtons = list.querySelectorAll('.dtcc-list-buttons .dtcc-button');
+                optionButtons.forEach((btn) => {
+                  const labelEl = btn.querySelector('.dtcc-button-text');
+                  if (!labelEl) return;
+
+                  const text = normalizeSplitValue(labelEl.textContent || '');
+                  const shouldBeActive = desired.includes(text);
+                  const isActive = btn.classList.contains('dtcc-button_active');
+
+                  if (shouldBeActive && !isActive) {
+                    btn.click();
+                  }
+                });
+
+                // Close only if we opened it
+                if (!wasOpen && dropdownButton.getAttribute('aria-expanded') === 'true') {
+                  dropdownButton.click();
+                }
+              } finally {
+                finish();
+              }
+            }, 40);
+          } catch (err) {
+            console.error(err);
+            finish();
+          }
+        }
+
+        // Run once after the table is fully initialised
+        dataTable.on('init.dt', () => {
+          setTimeout(() => applySplitColumnFilter(filterSelect.value), 100);
+        });
+
+        // Analysis filter changed
+        filterSelect.addEventListener('change', () => {
+          const selectedFilter = filterSelect.value;
+
+          filterDescription.textContent = filterDescriptions[selectedFilter];
+
+          const direction = smallestDifferenceFilters.has(selectedFilter) ? 'asc' : 'desc';
+          dataTable.order([[4, direction]]);
+
+          dataTable.one('draw.dt', () => {
+            setTimeout(() => applySplitColumnFilter(selectedFilter), 50);
+          });
+
+          dataTable.draw();
         });
       } else if (splitsTable) {
         console.error('DataTables or ColumnControl failed to load; splits table enhancements are unavailable.');
