@@ -409,6 +409,23 @@
 
     {{#if (eq view "splits")}}
       <p>Time between each progression split in cached matches. VOD links open at the ending split.</p>
+
+      <div id="splitAnalysisContainer" style="margin-bottom: 1rem;">
+        <label for="splitAnalysisFilter" style="margin-right: 0.5rem;">Split analysis:</label>
+        <select id="splitAnalysisFilter">
+          <option value="all" selected>All splits</option>
+          <option value="sh_end_smallest">Possible portal-room spawn</option>
+          <option value="fb_sh_smallest">Unusually fast stronghold arrival</option>
+          <option value="ow_fortress">Fortress-first routes</option>
+          <option value="ow_bastion">Early bastion access</option>
+          <option value="bastion_fortress_smallest">Potential fastions</option>
+          <option value="fast_overworld">Fast overworld routes</option>
+        </select>
+        <p id="splitAnalysisDescription" style="margin-top: 0.5rem; margin-bottom: 0; font-size: 0.9rem; opacity: 0.8;">
+          Browse all available splits.
+        </p>
+      </div>
+
       <table id="splitsTable">
         <thead>
           <tr>

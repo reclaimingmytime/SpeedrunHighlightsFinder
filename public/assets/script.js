@@ -658,33 +658,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return entities[character];
           });
 
-        const filterContainer = document.createElement('div');
-        filterContainer.style.marginBottom = '1rem';
+        const filterSelect = document.getElementById('splitAnalysisFilter');
+        const filterDescription = document.getElementById('splitAnalysisDescription');
 
-        const filterLabel = document.createElement('label');
-        filterLabel.htmlFor = 'splitAnalysisFilter';
-        filterLabel.textContent = 'Split analysis: ';
-        filterLabel.style.marginRight = '0.5rem';
-
-        const filterSelect = document.createElement('select');
-        filterSelect.id = 'splitAnalysisFilter';
-
-        const filterDescription = document.createElement('p');
-        filterDescription.id = 'splitAnalysisDescription';
-        filterDescription.style.marginTop = '0.5rem';
-        filterDescription.style.marginBottom = '0';
-        filterDescription.style.fontSize = '0.9rem';
-        filterDescription.style.opacity = '0.8';
-
-        const filterOptions = [
-          ['all', 'All splits'],
-          ['sh_end_smallest', 'Possible portal-room spawn'],
-          ['fb_sh_smallest', 'Unusually fast stronghold arrival'],
-          ['ow_fortress', 'Fortress-first routes'],
-          ['ow_bastion', 'Early bastion access'],
-          ['bastion_fortress_smallest', 'Potential fastions'],
-          ['fast_overworld', 'Fast overworld routes'],
-        ];
+        if (!filterSelect || !filterDescription) {
+          console.error('Split analysis filter elements missing from template');
+          return;
+        }
 
         const filterDescriptions = {
           all: 'Browse all available splits.',
@@ -701,12 +681,9 @@ document.addEventListener('DOMContentLoaded', () => {
           fast_overworld: 'Overworld → entered nether / bastion / fortress. Find fastest overworld routes.',
         };
 
-        // Corrected mappings
         const splitSelectionsByFilter = {
           all: [],
-          // Possible portal-room spawn → short Stronghold → End
           sh_end_smallest: ['stronghold -> end', 'finding stronghold -> end'],
-          // Unusually fast stronghold arrival → Fortress/Bastion → Stronghold
           fb_sh_smallest: ['fortress -> stronghold', 'bastion -> stronghold'],
           ow_fortress: ['entered nether -> fortress', 'overworld -> fortress'],
           ow_bastion: ['entered nether -> bastion', 'overworld -> bastion'],
@@ -721,20 +698,6 @@ document.addEventListener('DOMContentLoaded', () => {
             .trim()
             .toLowerCase();
         }
-
-        for (const [value, label] of filterOptions) {
-          const option = document.createElement('option');
-          option.value = value;
-          option.textContent = label;
-          filterSelect.appendChild(option);
-        }
-
-        filterDescription.textContent = filterDescriptions[filterSelect.value];
-
-        filterContainer.appendChild(filterLabel);
-        filterContainer.appendChild(filterSelect);
-        filterContainer.appendChild(filterDescription);
-        splitsTable.parentElement.insertBefore(filterContainer, splitsTable);
 
         // All "find short / early" analyses should sort ascending
         const smallestDifferenceFilters = new Set([
