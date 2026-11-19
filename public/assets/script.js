@@ -683,6 +683,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ['ow_fortress', 'Fortress-first routes'],
           ['ow_bastion', 'Early bastion access'],
           ['bastion_fortress_smallest', 'Potential fastions'],
+          ['fast_overworld', 'Fast overworld routes'],
         ];
 
         const filterDescriptions = {
@@ -694,19 +695,23 @@ document.addEventListener('DOMContentLoaded', () => {
           ow_fortress:
             'Overworld / Nether entry → Fortress. Investigate fortress-first routes and runs where a fortress is found unusually early.',
           ow_bastion:
-            'Overworld → Bastion. Investigate close bastion access and possible hoglin-related false positives.',
+            'Overworld / Nether entry → Bastion. Investigate close bastion access and possible hoglin-related incidents.',
           bastion_fortress_smallest:
-            'Bastion → Fortress. Find unusually close structure combinations that may indicate fastions. Some false positives are expected because travel time also depends on routing and movement.',
+            'Bastion → Fortress. Find unusually close structure combinations that may indicate fastions.',
+          fast_overworld: 'Overworld → entered nether / bastion / fortress. Find fastest overworld routes.',
         };
 
-        // Values that should end up checked in the Split column dropdown
+        // Corrected mappings
         const splitSelectionsByFilter = {
           all: [],
-          sh_end_smallest: ['fortress -> finding stronghold'],
-          fb_sh_smallest: [],
+          // Possible portal-room spawn → short Stronghold → End
+          sh_end_smallest: ['stronghold -> end', 'finding stronghold -> end'],
+          // Unusually fast stronghold arrival → Fortress/Bastion → Stronghold
+          fb_sh_smallest: ['fortress -> stronghold', 'bastion -> stronghold'],
           ow_fortress: ['entered nether -> fortress', 'overworld -> fortress'],
-          ow_bastion: ['overworld -> bastion'],
+          ow_bastion: ['entered nether -> bastion', 'overworld -> bastion'],
           bastion_fortress_smallest: ['bastion -> fortress'],
+          fast_overworld: ['overworld -> entered nether', 'overworld -> bastion', 'overworld -> fortress'],
         };
 
         function normalizeSplitValue(value) {
@@ -738,6 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
           'ow_fortress',
           'ow_bastion',
           'bastion_fortress_smallest',
+          'fast_overworld',
         ]);
 
         const dataTable = new window.DataTable(splitsTable, {
